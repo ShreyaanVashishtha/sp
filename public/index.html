@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Live Audio Jam Room</title>
-  <!-- PeerJS for zero-config WebRTC peer-to-peer streaming -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -12,7 +11,7 @@
 
   <div class="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl">
     <div class="flex items-center gap-3 mb-6">
-      <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+      <div id="status-indicator" class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></div>
       <h1 class="text-xl font-bold tracking-tight">Audio Broadcast Room</h1>
     </div>
 
@@ -26,9 +25,9 @@
     </div>
 
     <!-- HOST CONTROLS -->
-    <div id="host-panel" class="space-y-4">
+    <div id="host-panel" class="hidden space-y-4">
       <div class="p-4 bg-emerald-950/30 border border-emerald-800/40 rounded-xl text-sm text-emerald-300">
-        👑 <b>You are the Host.</b> Click below, switch to the <b>"Chrome Tab"</b> or <b>"Window"</b> tab, select Spotify, and ensure <b>"Also share tab audio"</b> is checked.
+        👑 <b>Host:</b> Click below. Select the Spotify tab/window and ensure <b>"Also share audio"</b> is checked!
       </div>
       <button id="start-broadcast-btn" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl shadow-lg transition">
         🎵 Start Spotify Audio Broadcast
@@ -39,15 +38,14 @@
     <!-- LISTENER CONTROLS -->
     <div id="listener-panel" class="hidden space-y-4">
       <div class="p-4 bg-blue-950/30 border border-blue-800/40 rounded-xl text-sm text-blue-300">
-        🎧 <b>You are a Listener.</b> No login or Spotify needed. Audio will stream live from the host.
+        🎧 <b>Listener:</b> You don't need Spotify. Tap the button below to enable sound.
       </div>
       <button id="listen-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 font-bold rounded-xl transition">
-        🔊 Tap to Unmute & Listen
+        🔊 Tap to Enable Audio
       </button>
-      <div id="status" class="text-center text-sm text-zinc-400 animate-pulse">
-        Connecting to host broadcast...
+      <div id="status" class="text-center text-sm text-zinc-400">
+        Connecting to host...
       </div>
-      <!-- Hidden audio tag for playback -->
       <audio id="remote-audio" autoplay playsinline></audio>
     </div>
   </div>
@@ -64,33 +62,75 @@
     const remoteAudio = document.getElementById('remote-audio');
     const statusText = document.getElementById('status');
     const listenerCountText = document.getElementById('listener-count');
+    const statusIndicator = document.getElementById('status-indicator');
 
     let localAudioStream = null;
-    let connectedPeers = [];
+    let waitingPeerIds = new Set();
+    let activeCalls = [];
 
-    // Initialize WebRTC Peer
-    const peer = new Peer();
-
-    peer.on('open', (id) => {
-      if (isHost) {
-        // Host creates the room
-        const roomUrl = `${window.location.origin}${window.location.pathname}?room=${id}`;
-        roomLinkInput.value = roomUrl;
-        hostPanel.classList.remove('hidden');
-      } else {
-        // Listener joins the room
-        hostPanel.classList.add('hidden');
-        listenerPanel.classList.remove('hidden');
-        roomLinkInput.value = window.location.href;
-        connectToHost(joinRoomId);
+    // PeerJS with Google STUN servers to bypass mobile cellular NAT/firewalls
+    const peer = new Peer({
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' }
+        ]
       }
     });
 
+    peer.on('open', (id) => {
+      statusIndicator.classList.remove('bg-amber-500');
+      statusIndicator.classList.add('bg-emerald-500');
+
+      if (isHost) {
+        const roomUrl = `${window.location.origin}${window.location.pathname}?room=${id}`;
+        roomLinkInput.value = roomUrl;
+        hostPanel.classList.remove('hidden');
+        setupHostSignaling();
+      } else {
+        hostPanel.classList.add('hidden');
+        listenerPanel.classList.remove('hidden');
+        roomLinkInput.value = window.location.href;
+        setupListener(joinRoomId);
+      }
+    });
+
+    peer.on('error', (err) => {
+      console.error('Peer error:', err);
+      if (statusText) statusText.textContent = 'Connection error: ' + err.type;
+    });
+
     // --- HOST LOGIC ---
-    if (isHost) {
+    function setupHostSignaling() {
+      // Listen for data ping from listeners who join early
+      peer.on('connection', (conn) => {
+        conn.on('open', () => {
+          waitingPeerIds.add(conn.peer);
+          updateListenerCount();
+
+          // If audio is already active, call the newcomer immediately
+          if (localAudioStream) {
+            callListener(conn.peer);
+          }
+        });
+
+        conn.on('close', () => {
+          waitingPeerIds.delete(conn.peer);
+          updateListenerCount();
+        });
+      });
+
+      // Handle direct calls if listener dials in
+      peer.on('call', (call) => {
+        if (localAudioStream) {
+          call.answer(localAudioStream);
+          trackCall(call);
+        }
+      });
+
       document.getElementById('start-broadcast-btn').addEventListener('click', async () => {
         try {
-          // Capture display audio (Chrome/Edge/Firefox supports tab audio)
           const displayStream = await navigator.mediaDevices.getDisplayMedia({
             video: true,
             audio: {
@@ -100,27 +140,23 @@
             }
           });
 
-          // Extract only the audio track so you aren't streaming heavy video
           const audioTrack = displayStream.getAudioTracks()[0];
           if (!audioTrack) {
-            alert('No audio selected! Make sure to check "Share audio" when picking the window/tab.');
+            alert('⚠️ No audio captured! You must check the "Share audio" / "Also share tab audio" box.');
+            displayStream.getTracks().forEach(t => t.stop());
             return;
           }
 
+          // Discard video track to save bandwidth
+          displayStream.getVideoTracks().forEach(t => t.stop());
           localAudioStream = new MediaStream([audioTrack]);
-          document.getElementById('start-broadcast-btn').textContent = "🟢 Broadcasting Live...";
+
+          document.getElementById('start-broadcast-btn').textContent = "🟢 Broadcasting Spotify Audio";
           document.getElementById('start-broadcast-btn').disabled = true;
 
-          // Answer incoming listener connections and send the audio stream
-          peer.on('call', (call) => {
-            call.answer(localAudioStream);
-            connectedPeers.push(call);
-            updateListenerCount();
-
-            call.on('close', () => {
-              connectedPeers = connectedPeers.filter(c => c !== call);
-              updateListenerCount();
-            });
+          // Call every waiting listener
+          waitingPeerIds.forEach((listenerId) => {
+            callListener(listenerId);
           });
 
         } catch (err) {
@@ -128,33 +164,63 @@
           alert('Could not capture audio: ' + err.message);
         }
       });
+    }
 
-      function updateListenerCount() {
-        listenerCountText.textContent = `Connected listeners: ${connectedPeers.length}`;
-      }
+    function callListener(peerId) {
+      if (!localAudioStream) return;
+      const call = peer.call(peerId, localAudioStream);
+      trackCall(call);
+    }
+
+    function trackCall(call) {
+      activeCalls.push(call);
+      updateListenerCount();
+      call.on('close', () => {
+        activeCalls = activeCalls.filter(c => c !== call);
+        updateListenerCount();
+      });
+    }
+
+    function updateListenerCount() {
+      const total = Math.max(waitingPeerIds.size, activeCalls.length);
+      listenerCountText.textContent = `Connected listeners: ${total}`;
     }
 
     // --- LISTENER LOGIC ---
-    function connectToHost(hostId) {
-      statusText.textContent = "Connecting to host stream...";
-      
-      // Call the host with an empty audio stream to establish connection
-      const call = peer.call(hostId, new MediaStream());
+    function setupListener(hostId) {
+      statusText.textContent = "Connecting to host...";
 
-      call.on('stream', (remoteStream) => {
-        remoteAudio.srcObject = remoteStream;
-        statusText.textContent = "🟢 Connected & Receiving Audio";
+      // 1. Establish a data channel to notify host we are here
+      const conn = peer.connect(hostId, { reliable: true });
+
+      conn.on('open', () => {
+        statusText.textContent = "Host found! Waiting for host to share audio...";
       });
 
-      call.on('error', (err) => {
-        statusText.textContent = "Failed to connect to host.";
+      // 2. Answer when the host sends the audio stream
+      peer.on('call', (call) => {
+        call.answer(); // Listener answers without sending an audio stream back
+
+        call.on('stream', (stream) => {
+          remoteAudio.srcObject = stream;
+          statusText.textContent = "🟢 Receiving live audio!";
+          statusText.classList.add('text-emerald-400');
+          // Try playing automatically
+          remoteAudio.play().catch(() => {
+            statusText.textContent = "🔊 Audio ready! Tap the blue button to play.";
+          });
+        });
       });
 
-      // Browser autoplay policies require user interaction before playing sound
-      document.getElementById('listen-btn').addEventListener('click', () => {
-        remoteAudio.play();
-        document.getElementById('listen-btn').textContent = "🔊 Audio Active";
-        document.getElementById('listen-btn').classList.add('bg-zinc-800');
+      // 3. User interaction to bypass mobile browser audio lock
+      const listenBtn = document.getElementById('listen-btn');
+      listenBtn.addEventListener('click', () => {
+        remoteAudio.play().then(() => {
+          listenBtn.textContent = "🔊 Audio Playing";
+          listenBtn.classList.replace('bg-indigo-600', 'bg-zinc-700');
+        }).catch((e) => {
+          console.error('Play blocked:', e);
+        });
       });
     }
 
