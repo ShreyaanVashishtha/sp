@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Audio Jam Room</title>
+  <!-- PeerJS for zero-config WebRTC peer-to-peer streaming -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen flex items-center justify-center p-4">
+
+  <div class="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+      <h1 class="text-xl font-bold tracking-tight">Audio Broadcast Room</h1>
+    </div>
+
+    <!-- ROOM INFO -->
+    <div class="bg-zinc-950/70 p-4 rounded-xl border border-zinc-800 mb-6">
+      <p class="text-xs text-zinc-400 uppercase font-semibold">Share Room Link</p>
+      <div class="flex items-center gap-2 mt-2">
+        <input id="room-link" type="text" readonly class="bg-zinc-900 text-sm text-zinc-300 w-full p-2.5 rounded-lg border border-zinc-700 outline-none select-all" />
+        <button id="copy-btn" class="bg-zinc-800 hover:bg-zinc-700 text-xs px-3 py-2.5 rounded-lg font-medium transition">Copy</button>
+      </div>
+    </div>
+
+    <!-- HOST CONTROLS -->
+    <div id="host-panel" class="space-y-4">
+      <div class="p-4 bg-emerald-950/30 border border-emerald-800/40 rounded-xl text-sm text-emerald-300">
+        👑 <b>You are the Host.</b> Click below, switch to the <b>"Chrome Tab"</b> or <b>"Window"</b> tab, select Spotify, and ensure <b>"Also share tab audio"</b> is checked.
+      </div>
+      <button id="start-broadcast-btn" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl shadow-lg transition">
+        🎵 Start Spotify Audio Broadcast
+      </button>
+      <p id="listener-count" class="text-center text-xs text-zinc-500">Connected listeners: 0</p>
+    </div>
+
+    <!-- LISTENER CONTROLS -->
+    <div id="listener-panel" class="hidden space-y-4">
+      <div class="p-4 bg-blue-950/30 border border-blue-800/40 rounded-xl text-sm text-blue-300">
+        🎧 <b>You are a Listener.</b> No login or Spotify needed. Audio will stream live from the host.
+      </div>
+      <button id="listen-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 font-bold rounded-xl transition">
+        🔊 Tap to Unmute & Listen
+      </button>
+      <div id="status" class="text-center text-sm text-zinc-400 animate-pulse">
+        Connecting to host broadcast...
+      </div>
+      <!-- Hidden audio tag for playback -->
+      <audio id="remote-audio" autoplay playsinline></audio>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinRoomId = urlParams.get('room');
+    const isHost = !joinRoomId;
+
+    const hostPanel = document.getElementById('host-panel');
+    const listenerPanel = document.getElementById('listener-panel');
+    const roomLinkInput = document.getElementById('room-link');
+    const copyBtn = document.getElementById('copy-btn');
+    const remoteAudio = document.getElementById('remote-audio');
+    const statusText = document.getElementById('status');
+    const listenerCountText = document.getElementById('listener-count');
+
+    let localAudioStream = null;
+    let connectedPeers = [];
+
+    // Initialize WebRTC Peer
+    const peer = new Peer();
+
+    peer.on('open', (id) => {
+      if (isHost) {
+        // Host creates the room
+        const roomUrl = `${window.location.origin}${window.location.pathname}?room=${id}`;
+        roomLinkInput.value = roomUrl;
+        hostPanel.classList.remove('hidden');
+      } else {
+        // Listener joins the room
+        hostPanel.classList.add('hidden');
+        listenerPanel.classList.remove('hidden');
+        roomLinkInput.value = window.location.href;
+        connectToHost(joinRoomId);
+      }
+    });
+
+    // --- HOST LOGIC ---
+    if (isHost) {
+      document.getElementById('start-broadcast-btn').addEventListener('click', async () => {
+        try {
+          // Capture display audio (Chrome/Edge/Firefox supports tab audio)
+          const displayStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false
+            }
+          });
+
+          // Extract only the audio track so you aren't streaming heavy video
+          const audioTrack = displayStream.getAudioTracks()[0];
+          if (!audioTrack) {
+            alert('No audio selected! Make sure to check "Share audio" when picking the window/tab.');
+            return;
+          }
+
+          localAudioStream = new MediaStream([audioTrack]);
+          document.getElementById('start-broadcast-btn').textContent = "🟢 Broadcasting Live...";
+          document.getElementById('start-broadcast-btn').disabled = true;
+
+          // Answer incoming listener connections and send the audio stream
+          peer.on('call', (call) => {
+            call.answer(localAudioStream);
+            connectedPeers.push(call);
+            updateListenerCount();
+
+            call.on('close', () => {
+              connectedPeers = connectedPeers.filter(c => c !== call);
+              updateListenerCount();
+            });
+          });
+
+        } catch (err) {
+          console.error(err);
+          alert('Could not capture audio: ' + err.message);
+        }
+      });
+
+      function updateListenerCount() {
+        listenerCountText.textContent = `Connected listeners: ${connectedPeers.length}`;
+      }
+    }
+
+    // --- LISTENER LOGIC ---
+    function connectToHost(hostId) {
+      statusText.textContent = "Connecting to host stream...";
+      
+      // Call the host with an empty audio stream to establish connection
+      const call = peer.call(hostId, new MediaStream());
+
+      call.on('stream', (remoteStream) => {
+        remoteAudio.srcObject = remoteStream;
+        statusText.textContent = "🟢 Connected & Receiving Audio";
+      });
+
+      call.on('error', (err) => {
+        statusText.textContent = "Failed to connect to host.";
+      });
+
+      // Browser autoplay policies require user interaction before playing sound
+      document.getElementById('listen-btn').addEventListener('click', () => {
+        remoteAudio.play();
+        document.getElementById('listen-btn').textContent = "🔊 Audio Active";
+        document.getElementById('listen-btn').classList.add('bg-zinc-800');
+      });
+    }
+
+    // Copy room link
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(roomLinkInput.value);
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => copyBtn.textContent = 'Copy', 2000);
+    });
+  </script>
+</body>
+</html>
