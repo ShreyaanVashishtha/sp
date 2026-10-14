@@ -3,176 +3,113 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CodeJam - Pair Programming & Live Audio</title>
+  <title>Live Audio Jam Room</title>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    textarea {
-      tab-size: 2;
-    }
-    /* Custom scrollbar for editor feel */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #18181b;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #3f3f46;
-      border-radius: 4px;
-    }
-  </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col font-sans">
+<body class="bg-zinc-950 text-white min-h-screen flex items-center justify-center p-4">
 
-  <!-- TOP BAR -->
-  <header class="border-b border-zinc-800 bg-zinc-900/60 backdrop-blur px-4 py-2.5 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div id="status-indicator" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></div>
-      <span class="font-bold text-sm tracking-wide flex items-center gap-1.5">
-        ⚡ CodeJam <span id="role-badge" class="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">Connecting</span>
-      </span>
+  <div class="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div id="status-indicator" class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></div>
+        <h1 class="text-xl font-bold tracking-tight">Audio Jam Room</h1>
+      </div>
+      <span id="role-badge" class="text-xs px-2.5 py-1 bg-zinc-800 text-zinc-400 rounded-full font-medium">Connecting...</span>
     </div>
 
-    <!-- AUDIO CONTROLS IN HEADER -->
-    <div class="flex items-center gap-2">
-      <!-- Host Broadcast Trigger -->
-      <button id="start-broadcast-btn" class="hidden text-xs bg-emerald-600 hover:bg-emerald-500 font-semibold px-3 py-1.5 rounded-lg shadow transition flex items-center gap-1.5 text-black">
-        🎵 <span>Broadcast Spotify</span>
+    <!-- ENTRY / MODE SELECTION (Shows first if no code in URL) -->
+    <div id="lobby-panel" class="space-y-4">
+      <button id="btn-create-room" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl shadow-lg transition">
+        👑 Create Host Room
       </button>
 
-      <!-- Listener Play Audio -->
-      <button id="listen-btn" class="hidden text-xs bg-indigo-600 hover:bg-indigo-500 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1">
-        🔊 <span id="listen-btn-label">Enable Audio</span>
-      </button>
+      <div class="relative flex py-2 items-center">
+        <div class="flex-grow border-t border-zinc-800"></div>
+        <span class="flex-shrink mx-4 text-xs uppercase tracking-widest text-zinc-500 font-semibold">OR JOIN A ROOM</span>
+        <div class="flex-grow border-t border-zinc-800"></div>
+      </div>
 
-      <span id="audio-status" class="text-xs text-zinc-400 hidden sm:inline">Waiting for host...</span>
-
-      <!-- Room Sharing -->
-      <button id="copy-btn" class="text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg transition">
-        🔗 Copy Invite Link
-      </button>
+      <div class="space-y-3">
+        <input 
+          id="join-code-input" 
+          type="text" 
+          maxlength="6" 
+          placeholder="Enter 6-digit Code" 
+          class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-center text-2xl font-mono tracking-widest text-white placeholder-zinc-600 focus:outline-none focus:border-indigo-500"
+        />
+        <button id="btn-join-room" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 font-bold rounded-xl transition">
+          🎧 Join with Code
+        </button>
+      </div>
     </div>
-  </header>
 
-  <!-- MAIN PAIR-PROGRAMMING LAYOUT -->
-  <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
+    <!-- HOST PANEL -->
+    <div id="host-panel" class="hidden space-y-5">
+      <div class="bg-zinc-950/80 p-5 rounded-2xl border border-zinc-800 text-center space-y-2">
+        <p class="text-xs text-zinc-400 uppercase font-semibold tracking-wider">Your Room Code</p>
+        <div id="display-code" class="text-4xl font-black font-mono tracking-widest text-emerald-400 select-all">------</div>
+        <p class="text-xs text-zinc-500">Tell friends to enter this 6-digit code on their phone</p>
+      </div>
 
-    <!-- LEFT: COLLABORATIVE EDITOR -->
-    <section class="flex-1 flex flex-col border-b md:border-b-0 md:border-r border-zinc-800">
+      <div class="p-4 bg-emerald-950/30 border border-emerald-800/40 rounded-xl text-sm text-emerald-300">
+        💡 Click below, select your <b>Spotify Tab or Window</b>, and check <b>"Also share audio"</b>.
+      </div>
+
+      <button id="start-broadcast-btn" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl shadow-lg transition">
+        🎵 Start Spotify Audio Broadcast
+      </button>
       
-      <!-- Editor Toolbar -->
-      <div class="bg-zinc-900 border-b border-zinc-800 px-4 py-2 flex items-center justify-between text-xs">
-        <div class="flex items-center gap-2">
-          <label for="lang-select" class="text-zinc-400">Language:</label>
-          <select id="lang-select" class="bg-zinc-950 border border-zinc-700 rounded px-2 py-1 text-zinc-200 outline-none">
-            <option value="javascript">JavaScript</option>
-            <option value="python">Python</option>
-            <option value="typescript">TypeScript</option>
-            <option value="html">HTML / CSS</option>
-            <option value="rust">Rust</option>
-            <option value="go">Go</option>
-          </select>
-        </div>
+      <p id="listener-count" class="text-center text-xs text-zinc-500">Connected listeners: 0</p>
+    </div>
 
-        <div class="flex items-center gap-2">
-          <span id="sync-indicator" class="text-[11px] text-zinc-500 flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Synced
-          </span>
-          <button id="run-code-btn" class="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-3 py-1 rounded transition text-xs">
-            ▶ Run JS
-          </button>
-        </div>
+    <!-- LISTENER PANEL -->
+    <div id="listener-panel" class="hidden space-y-5">
+      <div class="bg-zinc-950/80 p-4 rounded-xl border border-zinc-800 flex justify-between items-center">
+        <span class="text-xs text-zinc-400 font-semibold uppercase">Connected to Room</span>
+        <span id="active-listener-code" class="font-mono font-bold text-indigo-400 text-lg">------</span>
       </div>
 
-      <!-- Textarea Code Workspace -->
-      <div class="relative flex-1 bg-zinc-950 flex">
-        <div id="line-numbers" class="w-12 py-3 pr-2 text-right text-xs font-mono text-zinc-600 select-none bg-zinc-950 border-r border-zinc-900">
-          1
-        </div>
-        <textarea id="code-editor" spellcheck="false" class="flex-1 p-3 bg-transparent text-zinc-200 font-mono text-sm leading-relaxed resize-none outline-none border-none overflow-y-auto" placeholder="// Write or paste code here... Changes sync live with your peer!"></textarea>
+      <div class="p-4 bg-blue-950/30 border border-blue-800/40 rounded-xl text-sm text-blue-300">
+        🎧 Tap the button below to enable audio on this device.
       </div>
 
-      <!-- Execution Console Output -->
-      <div class="h-36 bg-zinc-900 border-t border-zinc-800 flex flex-col text-xs font-mono">
-        <div class="bg-zinc-950/70 px-3 py-1 text-zinc-400 border-b border-zinc-800 flex justify-between items-center">
-          <span>Terminal / Console Output</span>
-          <button id="clear-console-btn" class="text-[11px] hover:text-zinc-200">Clear</button>
-        </div>
-        <pre id="console-output" class="p-3 overflow-y-auto flex-1 text-emerald-400 space-y-1"></pre>
-      </div>
-    </section>
+      <button id="listen-btn" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 font-bold rounded-xl transition">
+        🔊 Tap to Enable Audio
+      </button>
 
-    <!-- RIGHT: PEERS & AUDIO STATUS DRAWER -->
-    <aside class="w-full md:w-72 bg-zinc-900/50 flex flex-col text-xs p-4 gap-4">
-      
-      <!-- Room status card -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 space-y-2">
-        <p class="font-bold text-zinc-300">Session Details</p>
-        <p class="text-zinc-400">Connected Peers: <span id="peer-count" class="text-white font-mono font-bold">1</span></p>
-        <p class="text-zinc-400">Audio Sync: <span id="audio-pill" class="text-amber-400">Idle</span></p>
+      <div id="listener-status" class="text-center text-sm text-zinc-400">
+        Connecting to host...
       </div>
 
-      <!-- Spotify host tip -->
-      <div id="host-guide" class="hidden bg-emerald-950/20 border border-emerald-900/40 rounded-xl p-3.5 space-y-2 text-emerald-300">
-        <p class="font-semibold">💡 Host Instructions:</p>
-        <p class="text-[11px] leading-relaxed text-emerald-400/90">
-          Click <b>Broadcast Spotify</b> at the top. In the screen picker, choose the Spotify tab (or desktop window) and toggle <b>"Also share tab audio"</b> on.
-        </p>
-      </div>
-
-      <!-- Quick scratch notes -->
-      <div class="flex-1 flex flex-col bg-zinc-900 border border-zinc-800 rounded-xl p-3.5">
-        <p class="font-bold text-zinc-300 mb-2">Scratchpad / Chat</p>
-        <div id="chat-messages" class="flex-1 overflow-y-auto space-y-2 mb-2 font-mono text-[11px] text-zinc-400"></div>
-        <div class="flex gap-1.5">
-          <input id="chat-input" type="text" placeholder="Send note..." class="bg-zinc-950 border border-zinc-700 rounded px-2 py-1 text-xs text-white w-full outline-none" />
-          <button id="send-chat-btn" class="bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 rounded font-medium">Send</button>
-        </div>
-      </div>
-    </aside>
-
-  </main>
-
-  <!-- Hidden audio tag for streams -->
-  <audio id="remote-audio" autoplay playsinline></audio>
+      <audio id="remote-audio" autoplay playsinline></audio>
+    </div>
+  </div>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const joinRoomId = urlParams.get('room');
-    const isHost = !joinRoomId;
+    // Prefixes avoid collisions with other PeerJS cloud users
+    const PEER_PREFIX = 'spotijam_';
 
-    // UI elements
+    const lobbyPanel = document.getElementById('lobby-panel');
+    const hostPanel = document.getElementById('host-panel');
+    const listenerPanel = document.getElementById('listener-panel');
     const roleBadge = document.getElementById('role-badge');
     const statusIndicator = document.getElementById('status-indicator');
-    const startBroadcastBtn = document.getElementById('start-broadcast-btn');
-    const listenBtn = document.getElementById('listen-btn');
-    const listenBtnLabel = document.getElementById('listen-btn-label');
-    const audioStatus = document.getElementById('audio-status');
-    const audioPill = document.getElementById('audio-pill');
-    const peerCountText = document.getElementById('peer-count');
-    const copyBtn = document.getElementById('copy-btn');
-    const hostGuide = document.getElementById('host-guide');
 
-    const editor = document.getElementById('code-editor');
-    const lineNumbers = document.getElementById('line-numbers');
-    const langSelect = document.getElementById('lang-select');
-    const runBtn = document.getElementById('run-code-btn');
-    const consoleOutput = document.getElementById('console-output');
-    const clearConsoleBtn = document.getElementById('clear-console-btn');
-
-    const chatMessages = document.getElementById('chat-messages');
-    const chatInput = document.getElementById('chat-input');
-    const sendChatBtn = document.getElementById('send-chat-btn');
+    const displayCode = document.getElementById('display-code');
+    const joinCodeInput = document.getElementById('join-code-input');
+    const activeListenerCode = document.getElementById('active-listener-code');
+    const listenerStatus = document.getElementById('listener-status');
+    const listenerCountText = document.getElementById('listener-count');
     const remoteAudio = document.getElementById('remote-audio');
 
+    let peer = null;
     let localAudioStream = null;
-    let dataConnections = [];
-    let isRemoteUpdate = false;
+    let waitingPeerIds = new Set();
+    let activeCalls = [];
 
-    // Initialize WebRTC Peer with Google STUN servers
-    const peer = new Peer({
+    const iceConfig = {
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
@@ -180,108 +117,89 @@
           { urls: 'stun:stun2.l.google.com:19302' }
         ]
       }
+    };
+
+    // Auto-uppercase input
+    joinCodeInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/[^0-9]/g, '');
     });
 
-    peer.on('open', (id) => {
-      statusIndicator.classList.replace('bg-amber-500', 'bg-emerald-500');
-
-      if (isHost) {
-        roleBadge.textContent = 'Host';
-        roleBadge.classList.add('bg-emerald-900', 'text-emerald-300');
-        startBroadcastBtn.classList.remove('hidden');
-        hostGuide.classList.remove('hidden');
-        audioStatus.textContent = 'Audio ready to broadcast';
-        initHostSignaling();
-      } else {
-        roleBadge.textContent = 'Peer / Listener';
-        roleBadge.classList.add('bg-blue-900', 'text-blue-300');
-        listenBtn.classList.remove('hidden');
-        audioStatus.textContent = 'Connecting to host...';
-        initListenerSignaling(joinRoomId);
-      }
-    });
-
-    // --- CODE EDITOR & LINE NUMBERS SYNC ---
-    function updateLineNumbers() {
-      const lines = editor.value.split('\n').length;
-      lineNumbers.innerHTML = Array.from({ length: lines }, (_, i) => i + 1).join('<br>');
+    // Check if entered directly via legacy URL param (?room=123456)
+    const urlParams = new URLSearchParams(window.location.search);
+    const directCode = urlParams.get('room');
+    if (directCode) {
+      initListener(directCode);
+    } else {
+      roleBadge.textContent = 'Welcome';
+      statusIndicator.classList.replace('bg-amber-500', 'bg-zinc-600');
     }
 
-    editor.addEventListener('input', () => {
-      updateLineNumbers();
-      if (!isRemoteUpdate) {
-        broadcastMessage({
-          type: 'code_update',
-          code: editor.value,
-          lang: langSelect.value
-        });
-      }
+    // --- BUTTON ACTIONS ---
+    document.getElementById('btn-create-room').addEventListener('click', () => {
+      initHost();
     });
 
-    // Support indent with Tab
-    editor.addEventListener('keydown', (e) => {
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        const start = editor.selectionStart;
-        const end = editor.selectionEnd;
-        editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
-        editor.selectionStart = editor.selectionEnd = start + 2;
-        editor.dispatchEvent(new Event('input'));
+    document.getElementById('btn-join-room').addEventListener('click', () => {
+      const code = joinCodeInput.value.trim();
+      if (code.length !== 6) {
+        alert('Please enter a valid 6-digit room code');
+        return;
       }
+      initListener(code);
     });
 
-    langSelect.addEventListener('change', () => {
-      broadcastMessage({
-        type: 'lang_update',
-        lang: langSelect.value
+    // --- HOST INITIALIZATION ---
+    function initHost() {
+      const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const hostPeerId = PEER_PREFIX + roomCode;
+
+      lobbyPanel.classList.add('hidden');
+      hostPanel.classList.remove('hidden');
+      displayCode.textContent = roomCode;
+      roleBadge.textContent = 'Host';
+      roleBadge.classList.replace('bg-zinc-800', 'bg-emerald-900/60');
+      roleBadge.classList.add('text-emerald-300');
+
+      peer = new Peer(hostPeerId, iceConfig);
+
+      peer.on('open', () => {
+        statusIndicator.classList.replace('bg-amber-500', 'bg-emerald-500');
+        statusIndicator.classList.replace('bg-zinc-600', 'bg-emerald-500');
       });
-    });
 
-    // --- PEER DATA MESSAGING ---
-    function broadcastMessage(data) {
-      dataConnections.forEach((conn) => {
-        if (conn.open) conn.send(data);
+      peer.on('error', (err) => {
+        if (err.type === 'unavailable-id') {
+          // If code collided, re-roll
+          initHost();
+        } else {
+          console.error('Peer error:', err);
+        }
       });
-    }
 
-    function handleIncomingData(data) {
-      if (data.type === 'code_update') {
-        isRemoteUpdate = true;
-        const selectionStart = editor.selectionStart;
-        const selectionEnd = editor.selectionEnd;
-        editor.value = data.code;
-        editor.setSelectionRange(selectionStart, selectionEnd);
-        updateLineNumbers();
-        isRemoteUpdate = false;
-      } else if (data.type === 'lang_update') {
-        langSelect.value = data.lang;
-      } else if (data.type === 'chat') {
-        renderChatMessage(data.sender, data.text);
-      }
-    }
-
-    // --- HOST PEER SETUP ---
-    function initHostSignaling() {
+      // Track listeners connecting
       peer.on('connection', (conn) => {
-        setupDataConnection(conn);
-
         conn.on('open', () => {
-          // Send current state to newly joined peer
-          conn.send({
-            type: 'code_update',
-            code: editor.value,
-            lang: langSelect.value
-          });
-
-          // If Spotify audio is already streaming, call this peer
+          waitingPeerIds.add(conn.peer);
+          updateListenerCount();
           if (localAudioStream) {
-            peer.call(conn.peer, localAudioStream);
+            callListener(conn.peer);
           }
         });
+        conn.on('close', () => {
+          waitingPeerIds.delete(conn.peer);
+          updateListenerCount();
+        });
       });
 
-      // Spotify Screen/Tab Audio Capture
-      startBroadcastBtn.addEventListener('click', async () => {
+      peer.on('call', (call) => {
+        if (localAudioStream) {
+          call.answer(localAudioStream);
+          trackCall(call);
+        }
+      });
+
+      // Handle Audio Screen Capture
+      document.getElementById('start-broadcast-btn').addEventListener('click', async () => {
         try {
           const displayStream = await navigator.mediaDevices.getDisplayMedia({
             video: true,
@@ -294,143 +212,103 @@
 
           const audioTrack = displayStream.getAudioTracks()[0];
           if (!audioTrack) {
-            alert('⚠️ No audio track found. Make sure to check "Also share audio" in the tab/window selector.');
-            displayStream.getTracks().forEach((t) => t.stop());
+            alert('⚠️ No audio captured! Ensure you tick "Share tab audio" or "Also share audio".');
+            displayStream.getTracks().forEach(t => t.stop());
             return;
           }
 
-          // Discard video to preserve bandwidth
-          displayStream.getVideoTracks().forEach((t) => t.stop());
+          // Discard video track
+          displayStream.getVideoTracks().forEach(t => t.stop());
           localAudioStream = new MediaStream([audioTrack]);
 
-          startBroadcastBtn.innerHTML = '🟢 <span>Broadcasting</span>';
-          startBroadcastBtn.classList.replace('bg-emerald-600', 'bg-zinc-800');
-          startBroadcastBtn.classList.add('text-emerald-400');
-          audioStatus.textContent = 'Audio active';
-          audioPill.textContent = 'Broadcasting';
-          audioPill.className = 'text-emerald-400 font-semibold';
+          document.getElementById('start-broadcast-btn').textContent = "🟢 Broadcasting Live";
+          document.getElementById('start-broadcast-btn').classList.replace('bg-emerald-500', 'bg-zinc-800');
+          document.getElementById('start-broadcast-btn').classList.add('text-emerald-400');
+          document.getElementById('start-broadcast-btn').disabled = true;
 
-          // Call all connected peers
-          dataConnections.forEach((conn) => {
-            peer.call(conn.peer, localAudioStream);
-          });
+          // Dispatch to waiting listeners
+          waitingPeerIds.forEach((id) => callListener(id));
         } catch (err) {
-          console.error('Audio capture error:', err);
+          console.error(err);
+          alert('Could not capture audio: ' + err.message);
         }
       });
     }
 
-    // --- LISTENER PEER SETUP ---
-    function initListenerSignaling(hostId) {
-      const conn = peer.connect(hostId, { reliable: true });
-      setupDataConnection(conn);
+    function callListener(peerId) {
+      if (!localAudioStream) return;
+      const call = peer.call(peerId, localAudioStream);
+      trackCall(call);
+    }
+
+    function trackCall(call) {
+      activeCalls.push(call);
+      updateListenerCount();
+      call.on('close', () => {
+        activeCalls = activeCalls.filter(c => c !== call);
+        updateListenerCount();
+      });
+    }
+
+    function updateListenerCount() {
+      const total = Math.max(waitingPeerIds.size, activeCalls.length);
+      listenerCountText.textContent = `Connected listeners: ${total}`;
+    }
+
+    // --- LISTENER INITIALIZATION ---
+    function initListener(code) {
+      lobbyPanel.classList.add('hidden');
+      listenerPanel.classList.remove('hidden');
+      activeListenerCode.textContent = code;
+      roleBadge.textContent = 'Listener';
+      roleBadge.classList.replace('bg-zinc-800', 'bg-indigo-900/60');
+      roleBadge.classList.add('text-indigo-300');
+
+      peer = new Peer(iceConfig);
+
+      peer.on('open', () => {
+        statusIndicator.classList.replace('bg-amber-500', 'bg-indigo-500');
+        statusIndicator.classList.replace('bg-zinc-600', 'bg-indigo-500');
+        
+        const hostPeerId = PEER_PREFIX + code;
+        listenerStatus.textContent = "Connecting to Room " + code + "...";
+
+        const conn = peer.connect(hostPeerId, { reliable: true });
+
+        conn.on('open', () => {
+          listenerStatus.textContent = "Connected! Waiting for host to share audio...";
+        });
+
+        conn.on('error', () => {
+          listenerStatus.textContent = "Could not find host. Check the code.";
+        });
+      });
 
       peer.on('call', (call) => {
-        call.answer(); // Answer without sending return audio
+        call.answer();
 
         call.on('stream', (stream) => {
           remoteAudio.srcObject = stream;
-          audioStatus.textContent = '🟢 Audio connected';
-          audioPill.textContent = 'Live';
-          audioPill.className = 'text-emerald-400 font-semibold';
-
-          remoteAudio.play().then(() => {
-            listenBtn.classList.replace('bg-indigo-600', 'bg-zinc-800');
-            listenBtnLabel.textContent = 'Playing';
-          }).catch(() => {
-            listenBtnLabel.textContent = 'Click to Unmute';
+          listenerStatus.textContent = "🟢 Live audio stream received!";
+          listenerStatus.classList.add('text-emerald-400');
+          remoteAudio.play().catch(() => {
+            listenerStatus.textContent = "🔊 Audio ready! Tap the blue button.";
           });
         });
       });
 
-      listenBtn.addEventListener('click', () => {
-        remoteAudio.play();
-        listenBtn.classList.replace('bg-indigo-600', 'bg-zinc-800');
-        listenBtnLabel.textContent = 'Playing';
+      peer.on('error', (err) => {
+        console.error(err);
+        listenerStatus.textContent = "Connection issue: " + err.type;
+      });
+
+      document.getElementById('listen-btn').addEventListener('click', () => {
+        remoteAudio.play().then(() => {
+          document.getElementById('listen-btn').textContent = "🔊 Audio Playing";
+          document.getElementById('listen-btn').classList.replace('bg-indigo-600', 'bg-zinc-800');
+        }).catch(console.error);
       });
     }
-
-    function setupDataConnection(conn) {
-      dataConnections.push(conn);
-      updatePeerCount();
-
-      conn.on('data', handleIncomingData);
-
-      conn.on('close', () => {
-        dataConnections = dataConnections.filter((c) => c !== conn);
-        updatePeerCount();
-      });
-    }
-
-    function updatePeerCount() {
-      peerCountText.textContent = dataConnections.length + 1;
-    }
-
-    // --- IN-BROWSER CODE RUNNER (JS) ---
-    runBtn.addEventListener('click', () => {
-      const code = editor.value;
-      consoleOutput.innerHTML = '';
-
-      // Override console.log temporarily to capture output
-      const originalLog = console.log;
-      const logs = [];
-
-      console.log = (...args) => {
-        logs.push(args.map(a => (typeof a === 'object' ? JSON.stringify(a, null, 2) : a)).join(' '));
-        originalLog.apply(console, args);
-      };
-
-      try {
-        const result = new Function(code)();
-        if (result !== undefined) logs.push(`=> ${result}`);
-      } catch (err) {
-        logs.push(`❌ Error: ${err.message}`);
-      } finally {
-        console.log = originalLog;
-      }
-
-      consoleOutput.textContent = logs.join('\n') || '// Code executed with no console output';
-    });
-
-    clearConsoleBtn.addEventListener('click', () => {
-      consoleOutput.textContent = '';
-    });
-
-    // --- SCRATCHPAD CHAT ---
-    function sendChat() {
-      const text = chatInput.value.trim();
-      if (!text) return;
-
-      const sender = isHost ? 'Host' : 'Peer';
-      renderChatMessage(sender, text);
-      broadcastMessage({ type: 'chat', sender, text });
-      chatInput.value = '';
-    }
-
-    sendChatBtn.addEventListener('click', sendChat);
-    chatInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') sendChat();
-    });
-
-    function renderChatMessage(sender, text) {
-      const div = document.createElement('div');
-      div.innerHTML = `<span class="${sender === 'Host' ? 'text-emerald-400' : 'text-blue-400'} font-semibold">${sender}:</span> <span class="text-zinc-300">${text}</span>`;
-      chatMessages.appendChild(div);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    // --- SHARE LINK ---
-    copyBtn.addEventListener('click', () => {
-      const shareUrl = isHost
-        ? `${window.location.origin}${window.location.pathname}?room=${peer.id}`
-        : window.location.href;
-
-      navigator.clipboard.writeText(shareUrl);
-      copyBtn.textContent = '✓ Copied!';
-      setTimeout(() => (copyBtn.textContent = '🔗 Copy Invite Link'), 2000);
-    });
-
-    updateLineNumbers();
   </script>
 </body>
 </html>
