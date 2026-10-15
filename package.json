@@ -2,7 +2,6 @@
   "name": "spotify-audio-broadcast",
   "version": "1.0.0",
   "private": true,
-  "description": "Real-time Spotify audio broadcast room using WebRTC",
   "scripts": {
     "start": "npx serve public"
   }

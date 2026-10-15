@@ -1,115 +1,375 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live Audio Jam Room</title>
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>JamRoom - Zero-Login WebRTC Audio Broadcast</title>
+  
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            spotify: {
+              green: '#1DB954',
+              greenHover: '#1ed760',
+              black: '#121212',
+              card: '#181818',
+              cardHover: '#282828',
+              subtext: '#a7a7a7'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Inter & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- PeerJS CDN -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+  <style>
+    body {
+      background-color: #0c0d0e;
+      color: #ffffff;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .glass-panel {
+      background: rgba(24, 24, 24, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .pulse-dot {
+      box-shadow: 0 0 12px #1DB954;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #121212;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2a2a2a;
+      border-radius: 9999px;
+    }
+  </style>
 </head>
-<body class="bg-zinc-950 text-white min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex flex-col justify-between selection:bg-spotify-green selection:text-black">
 
-  <div class="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div id="status-indicator" class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></div>
-        <h1 class="text-xl font-bold tracking-tight">Audio Jam Room</h1>
+  <!-- Background decorative glow -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-spotify-green/10 rounded-full blur-[120px]"></div>
+    <div class="absolute top-1/2 -right-40 w-[400px] h-[400px] bg-emerald-600/5 rounded-full blur-[140px]"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="relative z-10 border-b border-zinc-800/80 px-4 py-3 sm:px-8">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchMode(null)">
+        <div class="w-10 h-10 rounded-full bg-spotify-green flex items-center justify-center shadow-lg shadow-spotify-green/20">
+          <svg class="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/>
+            <path d="M12 4c-4.41 0-8 3.59-8 8 0 1.82.61 3.5 1.64 4.85l1.45-1.45A5.952 5.952 0 0 1 6 12c0-3.31 2.69-6 6-6s6 2.69 6 6c0 1.25-.39 2.41-1.05 3.37l1.46 1.46A7.957 7.957 0 0 0 20 12c0-4.41-3.59-8-8-8z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            JamRoom
+            <span class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded-full border border-zinc-700">P2P Audio</span>
+          </h1>
+          <p class="text-xs text-zinc-400">Zero-login sub-second Spotify & system audio streaming</p>
+        </div>
       </div>
-      <span id="role-badge" class="text-xs px-2.5 py-1 bg-zinc-800 text-zinc-400 rounded-full font-medium">Connecting...</span>
-    </div>
 
-    <!-- ENTRY / MODE SELECTION (Shows first if no code in URL) -->
-    <div id="lobby-panel" class="space-y-4">
-      <button id="btn-create-room" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl shadow-lg transition">
-        👑 Create Host Room
-      </button>
-
-      <div class="relative flex py-2 items-center">
-        <div class="flex-grow border-t border-zinc-800"></div>
-        <span class="flex-shrink mx-4 text-xs uppercase tracking-widest text-zinc-500 font-semibold">OR JOIN A ROOM</span>
-        <div class="flex-grow border-t border-zinc-800"></div>
-      </div>
-
-      <div class="space-y-3">
-        <input 
-          id="join-code-input" 
-          type="text" 
-          maxlength="6" 
-          placeholder="Enter 6-digit Code" 
-          class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-center text-2xl font-mono tracking-widest text-white placeholder-zinc-600 focus:outline-none focus:border-indigo-500"
-        />
-        <button id="btn-join-room" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 font-bold rounded-xl transition">
-          🎧 Join with Code
+      <!-- Quick Nav Mode Tabs -->
+      <div class="flex items-center bg-zinc-900/90 p-1 rounded-full border border-zinc-800 text-xs font-medium">
+        <button id="tabBtnHost" onclick="switchMode('host')" class="px-3.5 py-1.5 rounded-full transition-all text-zinc-400 hover:text-white">
+          Host
+        </button>
+        <button id="tabBtnListen" onclick="switchMode('listen')" class="px-3.5 py-1.5 rounded-full transition-all text-zinc-400 hover:text-white">
+          Listen
         </button>
       </div>
     </div>
+  </header>
 
-    <!-- HOST PANEL -->
-    <div id="host-panel" class="hidden space-y-5">
-      <div class="bg-zinc-950/80 p-5 rounded-2xl border border-zinc-800 text-center space-y-2">
-        <p class="text-xs text-zinc-400 uppercase font-semibold tracking-wider">Your Room Code</p>
-        <div id="display-code" class="text-4xl font-black font-mono tracking-widest text-emerald-400 select-all">------</div>
-        <p class="text-xs text-zinc-500">Tell friends to enter this 6-digit code on their phone</p>
+  <!-- Main Container -->
+  <main class="relative z-10 flex-1 max-w-2xl w-full mx-auto px-4 py-8 flex flex-col justify-center">
+
+    <!-- Landing View: Mode Selection -->
+    <div id="viewLanding" class="space-y-6">
+      <div class="text-center space-y-3">
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Stream audio with friends.<br><span class="text-spotify-green">Instant. Lossless. Free.</span></h2>
+        <p class="text-sm text-zinc-400 max-w-md mx-auto">
+          Share your Spotify, YouTube, or browser tab audio in real-time. No sign-ups or downloads required.
+        </p>
       </div>
 
-      <div class="p-4 bg-emerald-950/30 border border-emerald-800/40 rounded-xl text-sm text-emerald-300">
-        💡 Click below, select your <b>Spotify Tab or Window</b>, and check <b>"Also share audio"</b>.
-      </div>
+      <div class="grid sm:grid-cols-2 gap-4 pt-4">
+        <!-- Host Card -->
+        <div onclick="switchMode('host')" class="glass-panel p-6 rounded-2xl hover:border-spotify-green/50 hover:bg-zinc-800/60 transition cursor-pointer group flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center text-spotify-green group-hover:scale-105 transition">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white group-hover:text-spotify-green transition">Host a Broadcast</h3>
+              <p class="text-xs text-zinc-400 mt-1">Capture desktop/tab audio and stream it to listeners with sub-second WebRTC latency.</p>
+            </div>
+          </div>
+          <div class="flex items-center text-xs font-semibold text-spotify-green gap-1">
+            Start Hosting
+            <svg class="w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
 
-      <button id="start-broadcast-btn" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl shadow-lg transition">
-        🎵 Start Spotify Audio Broadcast
-      </button>
+        <!-- Listener Card -->
+        <div onclick="switchMode('listen')" class="glass-panel p-6 rounded-2xl hover:border-spotify-green/50 hover:bg-zinc-800/60 transition cursor-pointer group flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white group-hover:text-emerald-400 transition">Join as Listener</h3>
+              <p class="text-xs text-zinc-400 mt-1">Enter a 6-digit room code to listen in from any desktop or mobile browser.</p>
+            </div>
+          </div>
+          <div class="flex items-center text-xs font-semibold text-emerald-400 gap-1">
+            Join Room
+            <svg class="w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOST VIEW -->
+    <div id="viewHost" class="hidden space-y-6">
       
-      <p id="listener-count" class="text-center text-xs text-zinc-500">Connected listeners: 0</p>
+      <!-- Top Status Card -->
+      <div class="glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between pb-4 border-b border-zinc-800">
+          <div class="flex items-center gap-2">
+            <span id="hostStatusDot" class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+            <span id="hostStatusText" class="text-sm font-semibold text-zinc-300">Initializing room...</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs font-medium text-zinc-400 bg-zinc-900/80 px-3 py-1.5 rounded-full border border-zinc-800">
+            <svg class="w-4 h-4 text-spotify-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            <span id="hostListenerCount">0 listeners connected</span>
+          </div>
+        </div>
+
+        <!-- Room Code Display -->
+        <div class="text-center space-y-2">
+          <p class="text-xs uppercase tracking-wider font-bold text-zinc-400">Share this Room Code with Listeners</p>
+          <div class="flex items-center justify-center gap-3">
+            <div id="hostRoomCodeDisplay" class="font-mono text-4xl sm:text-5xl font-extrabold tracking-widest text-spotify-green py-2 px-6 rounded-xl bg-zinc-950/70 border border-zinc-800">
+              ------
+            </div>
+            <button id="copyRoomCodeBtn" onclick="copyRoomCode()" title="Copy Code" class="p-3.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 transition text-zinc-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="flex items-center justify-center gap-2 pt-2">
+            <button onclick="copyShareLink()" class="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-300 hover:text-spotify-green transition bg-zinc-900/80 hover:bg-zinc-800 px-3 py-1.5 rounded-lg border border-zinc-800">
+              <svg class="w-3.5 h-3.5 text-spotify-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+              </svg>
+              <span>Copy Direct Invite Link</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Audio Visualizer Canvas -->
+        <div class="relative bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80 flex flex-col items-center justify-center min-h-[120px]">
+          <canvas id="hostVisualizer" class="w-full h-20 rounded" width="500" height="80"></canvas>
+          <div id="hostVisualizerPlaceholder" class="absolute text-xs text-zinc-500 font-medium flex items-center gap-2">
+            <svg class="w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+            </svg>
+            Audio visualizer is idle (start broadcast to activate)
+          </div>
+        </div>
+
+        <!-- Instructions callout -->
+        <div class="bg-zinc-900/80 rounded-xl p-4 border border-zinc-800 text-xs text-zinc-300 space-y-2">
+          <div class="flex items-center gap-2 font-semibold text-spotify-green">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Crucial for Spotify / System Audio Streaming:
+          </div>
+          <p class="leading-relaxed text-zinc-400">
+            When clicking <strong class="text-zinc-200">"Start Audio Broadcast"</strong>, select the <strong class="text-zinc-200">Spotify tab / window</strong> (or entire screen) and check the box: <strong class="text-emerald-400">"Also share tab audio"</strong> or <strong class="text-emerald-400">"Share system audio"</strong>. Video is discarded automatically to save bandwidth.
+          </p>
+        </div>
+
+        <!-- Host Action Button -->
+        <div class="flex flex-col gap-3">
+          <button id="btnHostBroadcast" onclick="toggleBroadcast()" disabled class="w-full py-4 px-6 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg bg-spotify-green hover:bg-spotify-greenHover text-black disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span id="btnHostBroadcastText">Start Audio Broadcast</span>
+          </button>
+        </div>
+      </div>
     </div>
 
-    <!-- LISTENER PANEL -->
-    <div id="listener-panel" class="hidden space-y-5">
-      <div class="bg-zinc-950/80 p-4 rounded-xl border border-zinc-800 flex justify-between items-center">
-        <span class="text-xs text-zinc-400 font-semibold uppercase">Connected to Room</span>
-        <span id="active-listener-code" class="font-mono font-bold text-indigo-400 text-lg">------</span>
+    <!-- LISTENER VIEW -->
+    <div id="viewListen" class="hidden space-y-6">
+
+      <!-- Listener Card -->
+      <div class="glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
+        
+        <div class="flex items-center justify-between pb-4 border-b border-zinc-800">
+          <div class="flex items-center gap-2">
+            <span id="listenerStatusDot" class="w-3 h-3 rounded-full bg-zinc-600"></span>
+            <span id="listenerStatusText" class="text-sm font-semibold text-zinc-300">Ready to join</span>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">Listener Mode</span>
+        </div>
+
+        <!-- Join Form (When not connected) -->
+        <div id="listenerJoinForm" class="space-y-4">
+          <div class="space-y-2 text-center">
+            <label for="inputRoomCode" class="block text-xs uppercase tracking-wider font-bold text-zinc-400">Enter 6-Digit Room Code</label>
+            <input 
+              type="text" 
+              id="inputRoomCode" 
+              maxlength="6" 
+              placeholder="123456" 
+              inputmode="numeric" 
+              pattern="[0-9]*" 
+              class="w-full max-w-xs mx-auto text-center font-mono text-3xl font-extrabold tracking-widest bg-zinc-950/80 border border-zinc-700 focus:border-spotify-green focus:ring-2 focus:ring-spotify-green/20 rounded-xl py-3 px-4 outline-none text-white transition placeholder:text-zinc-600"
+              onkeyup="onRoomInputKeyUp(event)"
+            />
+          </div>
+
+          <button 
+            id="btnJoinRoom" 
+            onclick="joinRoom()" 
+            class="w-full py-3.5 px-6 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg bg-spotify-green hover:bg-spotify-greenHover text-black cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+            </svg>
+            <span>Connect to Room</span>
+          </button>
+        </div>
+
+        <!-- Connected Stream Control & Visualizer (Visible once connected) -->
+        <div id="listenerLivePanel" class="hidden space-y-6">
+
+          <!-- Autoplay Unlock Banner -->
+          <div id="autoplayBanner" class="p-4 rounded-xl bg-gradient-to-r from-emerald-950/60 to-zinc-900 border border-spotify-green/40 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+            <div class="flex items-center gap-3 text-center sm:text-left">
+              <div class="w-10 h-10 rounded-full bg-spotify-green/20 text-spotify-green flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-bold text-white">Browser Audio Permission</p>
+                <p class="text-xs text-zinc-400">Mobile browsers require a tap to unpause incoming live audio.</p>
+              </div>
+            </div>
+            <button 
+              id="btnEnableAudio" 
+              onclick="enableAudioPlayback()" 
+              class="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-spotify-green hover:bg-spotify-greenHover text-black text-xs font-bold transition shadow-md whitespace-nowrap cursor-pointer">
+              Tap to Enable Audio 🔊
+            </button>
+          </div>
+
+          <!-- Audio Visualizer Canvas -->
+          <div class="relative bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80 flex flex-col items-center justify-center min-h-[120px]">
+            <canvas id="listenerVisualizer" class="w-full h-20 rounded" width="500" height="80"></canvas>
+            <div id="listenerVisualizerPlaceholder" class="absolute text-xs text-zinc-500 font-medium flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-zinc-500 animate-ping"></span>
+              Waiting for host audio stream...
+            </div>
+          </div>
+
+          <!-- Volume & Controls -->
+          <div class="bg-zinc-900/80 rounded-xl p-4 border border-zinc-800 space-y-3">
+            <div class="flex items-center justify-between text-xs font-semibold text-zinc-400">
+              <span class="flex items-center gap-1.5">
+                <svg id="volumeIcon" class="w-4 h-4 text-spotify-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                </svg>
+                Stream Volume
+              </span>
+              <span id="volumePercent">100%</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <input 
+                type="range" 
+                id="volumeSlider" 
+                min="0" 
+                max="1" 
+                step="0.01" 
+                value="1" 
+                oninput="setVolume(this.value)" 
+                class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-spotify-green"
+              />
+            </div>
+          </div>
+
+          <!-- Leave Room Button -->
+          <button 
+            onclick="leaveRoom()" 
+            class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-zinc-800 transition">
+            Disconnect from Room
+          </button>
+        </div>
+
       </div>
-
-      <div class="p-4 bg-blue-950/30 border border-blue-800/40 rounded-xl text-sm text-blue-300">
-        🎧 Tap the button below to enable audio on this device.
-      </div>
-
-      <button id="listen-btn" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 font-bold rounded-xl transition">
-        🔊 Tap to Enable Audio
-      </button>
-
-      <div id="listener-status" class="text-center text-sm text-zinc-400">
-        Connecting to host...
-      </div>
-
-      <audio id="remote-audio" autoplay playsinline></audio>
     </div>
+
+  </main>
+
+  <!-- Hidden Remote Audio Element -->
+  <audio id="remoteAudio" autoplay playsinline class="hidden"></audio>
+
+  <!-- Global Toast Notification -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-zinc-800 text-white text-xs font-medium border border-zinc-700 shadow-2xl transition-all duration-300 opacity-0 pointer-events-none translate-y-3 flex items-center gap-2">
+    <span id="toastMsg">Message</span>
   </div>
 
+  <!-- Footer -->
+  <footer class="relative z-10 border-t border-zinc-900 py-4 px-4 text-center text-xs text-zinc-500">
+    <p>P2P Audio Room • Sub-second WebRTC streaming via PeerJS & Google STUN</p>
+  </footer>
+
+  <!-- Application Logic -->
   <script>
-    // Prefixes avoid collisions with other PeerJS cloud users
-    const PEER_PREFIX = 'spotijam_';
-
-    const lobbyPanel = document.getElementById('lobby-panel');
-    const hostPanel = document.getElementById('host-panel');
-    const listenerPanel = document.getElementById('listener-panel');
-    const roleBadge = document.getElementById('role-badge');
-    const statusIndicator = document.getElementById('status-indicator');
-
-    const displayCode = document.getElementById('display-code');
-    const joinCodeInput = document.getElementById('join-code-input');
-    const activeListenerCode = document.getElementById('active-listener-code');
-    const listenerStatus = document.getElementById('listener-status');
-    const listenerCountText = document.getElementById('listener-count');
-    const remoteAudio = document.getElementById('remote-audio');
-
-    let peer = null;
-    let localAudioStream = null;
-    let waitingPeerIds = new Set();
-    let activeCalls = [];
-
-    const iceConfig = {
+    // Configuration & ICE Servers
+    const PEER_CONFIG = {
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
@@ -119,196 +379,618 @@
       }
     };
 
-    // Auto-uppercase input
-    joinCodeInput.addEventListener('input', (e) => {
-      e.target.value = e.target.value.replace(/[^0-9]/g, '');
-    });
+    const ROOM_PREFIX = 'spotijam_';
 
-    // Check if entered directly via legacy URL param (?room=123456)
-    const urlParams = new URLSearchParams(window.location.search);
-    const directCode = urlParams.get('room');
-    if (directCode) {
-      initListener(directCode);
-    } else {
-      roleBadge.textContent = 'Welcome';
-      statusIndicator.classList.replace('bg-amber-500', 'bg-zinc-600');
+    // State Variables
+    let currentMode = null; // 'host' | 'listen' | null
+    let peer = null;
+    let currentRoomCode = null;
+
+    // Host State
+    let hostLocalStream = null;
+    let connectedListeners = new Set(); // Set of listener peer IDs
+    let activeCalls = new Map(); // listenerPeerId -> mediaCall
+
+    // Listener State
+    let hostDataConn = null;
+    let incomingCall = null;
+    let audioContext = null;
+    let analyserNode = null;
+    let visualizerAnimationId = null;
+
+    // Toast helper
+    let toastTimeout;
+    function showToast(msg, duration = 3000) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.textContent = msg;
+      toast.classList.remove('opacity-0', 'translate-y-3', 'pointer-events-none');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-3', 'pointer-events-none');
+      }, duration);
     }
 
-    // --- BUTTON ACTIONS ---
-    document.getElementById('btn-create-room').addEventListener('click', () => {
-      initHost();
-    });
+    // Tab & View Switcher
+    function switchMode(mode) {
+      cleanupCurrentMode();
 
-    document.getElementById('btn-join-room').addEventListener('click', () => {
-      const code = joinCodeInput.value.trim();
-      if (code.length !== 6) {
-        alert('Please enter a valid 6-digit room code');
+      currentMode = mode;
+      const viewLanding = document.getElementById('viewLanding');
+      const viewHost = document.getElementById('viewHost');
+      const viewListen = document.getElementById('viewListen');
+      const tabHost = document.getElementById('tabBtnHost');
+      const tabListen = document.getElementById('tabBtnListen');
+
+      // Reset tabs style
+      tabHost.className = "px-3.5 py-1.5 rounded-full transition-all text-zinc-400 hover:text-white";
+      tabListen.className = "px-3.5 py-1.5 rounded-full transition-all text-zinc-400 hover:text-white";
+
+      if (mode === 'host') {
+        viewLanding.classList.add('hidden');
+        viewHost.classList.remove('hidden');
+        viewListen.classList.add('hidden');
+        tabHost.className = "px-3.5 py-1.5 rounded-full transition-all bg-spotify-green text-black font-semibold shadow-sm";
+        initHostMode();
+      } else if (mode === 'listen') {
+        viewLanding.classList.add('hidden');
+        viewHost.classList.add('hidden');
+        viewListen.classList.remove('hidden');
+        tabListen.className = "px-3.5 py-1.5 rounded-full transition-all bg-spotify-green text-black font-semibold shadow-sm";
+        initListenerMode();
+      } else {
+        viewLanding.classList.remove('hidden');
+        viewHost.classList.add('hidden');
+        viewListen.classList.add('hidden');
+      }
+    }
+
+    function cleanupCurrentMode() {
+      // Stop animation
+      if (visualizerAnimationId) {
+        cancelAnimationFrame(visualizerAnimationId);
+        visualizerAnimationId = null;
+      }
+
+      // Cleanup Host audio stream
+      if (hostLocalStream) {
+        hostLocalStream.getTracks().forEach(t => t.stop());
+        hostLocalStream = null;
+      }
+
+      // Cleanup Calls
+      activeCalls.forEach(call => {
+        try { call.close(); } catch(e){}
+      });
+      activeCalls.clear();
+      connectedListeners.clear();
+
+      if (incomingCall) {
+        try { incomingCall.close(); } catch(e){}
+        incomingCall = null;
+      }
+
+      if (hostDataConn) {
+        try { hostDataConn.close(); } catch(e){}
+        hostDataConn = null;
+      }
+
+      // Close PeerJS
+      if (peer) {
+        try { peer.destroy(); } catch(e){}
+        peer = null;
+      }
+
+      const remoteAudio = document.getElementById('remoteAudio');
+      if (remoteAudio) {
+        remoteAudio.srcObject = null;
+      }
+    }
+
+    // ==========================================
+    // HOST IMPLEMENTATION
+    // ==========================================
+
+    function initHostMode() {
+      const codeDisplay = document.getElementById('hostRoomCodeDisplay');
+      const statusText = document.getElementById('hostStatusText');
+      const statusDot = document.getElementById('hostStatusDot');
+      const btnBroadcast = document.getElementById('btnHostBroadcast');
+
+      statusText.textContent = "Connecting to signaling server...";
+      statusDot.className = "w-3 h-3 rounded-full bg-amber-500 animate-pulse";
+      btnBroadcast.disabled = true;
+
+      // 1. Generate 6-digit numeric room code
+      const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
+      currentRoomCode = roomCode;
+      codeDisplay.textContent = roomCode;
+
+      // 2. Initialize Peer with deterministic ID scheme
+      const peerId = `${ROOM_PREFIX}${roomCode}`;
+      peer = new Peer(peerId, PEER_CONFIG);
+
+      peer.on('open', (id) => {
+        console.log('[Host] Room open with Peer ID:', id);
+        statusText.textContent = "Room Ready (Click 'Start Audio Broadcast')";
+        statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
+        btnBroadcast.disabled = false;
+        showToast(`Host Room ${roomCode} created!`);
+      });
+
+      // 3. Listener Handshake: track incoming data connections
+      peer.on('connection', (conn) => {
+        console.log('[Host] Incoming listener connection from:', conn.peer);
+        
+        conn.on('open', () => {
+          connectedListeners.add(conn.peer);
+          updateHostListenerCount();
+
+          // Send current status to listener
+          conn.send({
+            type: 'ROOM_STATUS',
+            broadcasting: !!hostLocalStream
+          });
+
+          // If stream is already live, immediately call this new listener
+          if (hostLocalStream) {
+            dispatchCallToListener(conn.peer);
+          }
+        });
+
+        conn.on('close', () => {
+          console.log('[Host] Listener disconnected:', conn.peer);
+          connectedListeners.delete(conn.peer);
+          activeCalls.delete(conn.peer);
+          updateHostListenerCount();
+        });
+
+        conn.on('error', (err) => {
+          console.warn('[Host] Connection error with listener:', conn.peer, err);
+          connectedListeners.delete(conn.peer);
+          activeCalls.delete(conn.peer);
+          updateHostListenerCount();
+        });
+      });
+
+      // Answer any incoming media calls directly with local stream if available
+      peer.on('call', (call) => {
+        console.log('[Host] Incoming media call from:', call.peer);
+        if (hostLocalStream) {
+          call.answer(hostLocalStream);
+          activeCalls.set(call.peer, call);
+        } else {
+          call.answer(); // answer without stream until broadcast starts
+        }
+      });
+
+      peer.on('error', (err) => {
+        console.error('[Host] PeerJS Error:', err);
+        if (err.type === 'unavailable-id') {
+          showToast('Room code collision, generating new room...');
+          initHostMode();
+        } else {
+          statusText.textContent = `Signaling error: ${err.type}`;
+          statusDot.className = "w-3 h-3 rounded-full bg-red-500";
+        }
+      });
+    }
+
+    function dispatchCallToListener(listenerId) {
+      if (!peer || !hostLocalStream) return;
+      try {
+        console.log('[Host] Calling listener with audio stream:', listenerId);
+        const call = peer.call(listenerId, hostLocalStream);
+        activeCalls.set(listenerId, call);
+        call.on('close', () => {
+          activeCalls.delete(listenerId);
+        });
+        call.on('error', (err) => {
+          console.warn('[Host] Call error with listener', listenerId, err);
+          activeCalls.delete(listenerId);
+        });
+      } catch (err) {
+        console.error('[Host] Failed to dispatch call to listener:', listenerId, err);
+      }
+    }
+
+    function updateHostListenerCount() {
+      const countEl = document.getElementById('hostListenerCount');
+      const count = connectedListeners.size;
+      countEl.textContent = `${count} ${count === 1 ? 'listener' : 'listeners'} connected`;
+    }
+
+    async function toggleBroadcast() {
+      const btn = document.getElementById('btnHostBroadcast');
+      const btnText = document.getElementById('btnHostBroadcastText');
+      const statusText = document.getElementById('hostStatusText');
+      const statusDot = document.getElementById('hostStatusDot');
+
+      if (hostLocalStream) {
+        // Stop Broadcast
+        stopHostBroadcast();
         return;
       }
-      initListener(code);
-    });
 
-    // --- HOST INITIALIZATION ---
-    function initHost() {
-      const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const hostPeerId = PEER_PREFIX + roomCode;
+      // Start Audio Capture Flow
+      try {
+        statusText.textContent = "Requesting tab / system audio...";
 
-      lobbyPanel.classList.add('hidden');
-      hostPanel.classList.remove('hidden');
-      displayCode.textContent = roomCode;
-      roleBadge.textContent = 'Host';
-      roleBadge.classList.replace('bg-zinc-800', 'bg-emerald-900/60');
-      roleBadge.classList.add('text-emerald-300');
-
-      peer = new Peer(hostPeerId, iceConfig);
-
-      peer.on('open', () => {
-        statusIndicator.classList.replace('bg-amber-500', 'bg-emerald-500');
-        statusIndicator.classList.replace('bg-zinc-600', 'bg-emerald-500');
-      });
-
-      peer.on('error', (err) => {
-        if (err.type === 'unavailable-id') {
-          // If code collided, re-roll
-          initHost();
-        } else {
-          console.error('Peer error:', err);
-        }
-      });
-
-      // Track listeners connecting
-      peer.on('connection', (conn) => {
-        conn.on('open', () => {
-          waitingPeerIds.add(conn.peer);
-          updateListenerCount();
-          if (localAudioStream) {
-            callListener(conn.peer);
+        // Music-grade audio constraints: disable echo cancellation & AGC for lossless stereophonic sound
+        const displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+            channelCount: 2
           }
         });
-        conn.on('close', () => {
-          waitingPeerIds.delete(conn.peer);
-          updateListenerCount();
-        });
-      });
 
-      peer.on('call', (call) => {
-        if (localAudioStream) {
-          call.answer(localAudioStream);
-          trackCall(call);
+        const audioTracks = displayStream.getAudioTracks();
+
+        if (!audioTracks || audioTracks.length === 0) {
+          // User forgot to check "Share audio"
+          displayStream.getTracks().forEach(t => t.stop());
+          statusText.textContent = "Room Ready (Click 'Start Audio Broadcast')";
+          alert("⚠️ No audio track found!\n\nPlease make sure to check the 'Share audio' or 'Also share tab audio' checkbox in the screen share popup.");
+          return;
         }
-      });
 
-      // Handle Audio Screen Capture
-      document.getElementById('start-broadcast-btn').addEventListener('click', async () => {
-        try {
-          const displayStream = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-            audio: {
-              echoCancellation: false,
-              noiseSuppression: false,
-              autoGainControl: false
+        const audioTrack = audioTracks[0];
+
+        // Discard video track immediately to preserve bandwidth
+        displayStream.getVideoTracks().forEach(t => {
+          console.log('[Host] Discarding video track to preserve bandwidth');
+          t.stop();
+        });
+
+        // Create audio-only MediaStream
+        hostLocalStream = new MediaStream([audioTrack]);
+
+        // When host stops screen sharing via browser native floating bar
+        audioTrack.onended = () => {
+          console.log('[Host] Audio track stopped by user');
+          stopHostBroadcast();
+        };
+
+        // Broadcast to all waiting listeners
+        console.log(`[Host] Broadcasting to ${connectedListeners.size} listeners`);
+        connectedListeners.forEach(listenerId => {
+          dispatchCallToListener(listenerId);
+        });
+
+        // Setup Visualizer
+        startAudioVisualizer(hostLocalStream, 'hostVisualizer', 'hostVisualizerPlaceholder');
+
+        // Update UI
+        statusText.textContent = "🔴 LIVE - Broadcasting audio";
+        statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
+        btn.className = "w-full py-4 px-6 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg bg-red-600 hover:bg-red-500 text-white cursor-pointer";
+        btnText.textContent = "Stop Audio Broadcast";
+        showToast("Audio broadcast live!");
+
+      } catch (err) {
+        console.error('[Host] getDisplayMedia error:', err);
+        statusText.textContent = "Broadcast cancelled / permission denied";
+        statusDot.className = "w-3 h-3 rounded-full bg-amber-500";
+        if (err.name !== 'NotAllowedError') {
+          showToast(`Capture error: ${err.message}`);
+        }
+      }
+    }
+
+    function stopHostBroadcast() {
+      const btn = document.getElementById('btnHostBroadcast');
+      const btnText = document.getElementById('btnHostBroadcastText');
+      const statusText = document.getElementById('hostStatusText');
+      const statusDot = document.getElementById('hostStatusDot');
+
+      if (hostLocalStream) {
+        hostLocalStream.getTracks().forEach(t => t.stop());
+        hostLocalStream = null;
+      }
+
+      // Close all media calls
+      activeCalls.forEach(call => {
+        try { call.close(); } catch(e){}
+      });
+      activeCalls.clear();
+
+      // Stop visualizer
+      stopAudioVisualizer('hostVisualizer', 'hostVisualizerPlaceholder');
+
+      statusText.textContent = "Broadcast stopped (Room still active)";
+      statusDot.className = "w-3 h-3 rounded-full bg-spotify-green";
+      btn.className = "w-full py-4 px-6 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg bg-spotify-green hover:bg-spotify-greenHover text-black cursor-pointer";
+      btnText.textContent = "Start Audio Broadcast";
+      showToast("Broadcast ended");
+    }
+
+    function copyRoomCode() {
+      if (!currentRoomCode) return;
+      navigator.clipboard.writeText(currentRoomCode).then(() => {
+        showToast("Room code copied to clipboard!");
+      }).catch(() => {
+        showToast(`Code: ${currentRoomCode}`);
+      });
+    }
+
+    function copyShareLink() {
+      if (!currentRoomCode) return;
+      const shareUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoomCode}`;
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        showToast("Direct invite link copied!");
+      }).catch(() => {
+        showToast("Failed to copy link");
+      });
+    }
+
+    // ==========================================
+    // LISTENER IMPLEMENTATION
+    // ==========================================
+
+    function initListenerMode() {
+      const joinForm = document.getElementById('listenerJoinForm');
+      const livePanel = document.getElementById('listenerLivePanel');
+      const statusText = document.getElementById('listenerStatusText');
+      const statusDot = document.getElementById('listenerStatusDot');
+      const inputCode = document.getElementById('inputRoomCode');
+
+      joinForm.classList.remove('hidden');
+      livePanel.classList.add('hidden');
+      statusText.textContent = "Ready to connect";
+      statusDot.className = "w-3 h-3 rounded-full bg-zinc-600";
+
+      // Check if URL has ?room=123456
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryRoom = urlParams.get('room');
+      if (queryRoom && queryRoom.trim().length === 6) {
+        inputCode.value = queryRoom.trim();
+        // Automatically initiate connection if room param provided
+        setTimeout(() => joinRoom(), 300);
+      }
+    }
+
+    function onRoomInputKeyUp(e) {
+      // Auto-filter non digits
+      e.target.value = e.target.value.replace(/[^0-9]/g, '');
+      if (e.key === 'Enter' && e.target.value.length === 6) {
+        joinRoom();
+      }
+    }
+
+    function joinRoom() {
+      const inputCode = document.getElementById('inputRoomCode');
+      const roomCode = inputCode.value.trim();
+      const statusText = document.getElementById('listenerStatusText');
+      const statusDot = document.getElementById('listenerStatusDot');
+      const joinForm = document.getElementById('listenerJoinForm');
+      const livePanel = document.getElementById('listenerLivePanel');
+      const btnJoin = document.getElementById('btnJoinRoom');
+
+      if (!roomCode || roomCode.length !== 6) {
+        showToast("Please enter a valid 6-digit room code");
+        inputCode.focus();
+        return;
+      }
+
+      currentRoomCode = roomCode;
+      btnJoin.disabled = true;
+      statusText.textContent = "Connecting to host...";
+      statusDot.className = "w-3 h-3 rounded-full bg-amber-500 animate-pulse";
+
+      // Initialize anonymous peer instance
+      peer = new Peer(PEER_CONFIG);
+
+      peer.on('open', (myPeerId) => {
+        console.log('[Listener] Anonymous Peer open ID:', myPeerId);
+        const hostPeerId = `${ROOM_PREFIX}${roomCode}`;
+
+        // Handshake: Connect to host via reliable data channel
+        console.log('[Listener] Connecting data channel to:', hostPeerId);
+        hostDataConn = peer.connect(hostPeerId, { reliable: true });
+
+        hostDataConn.on('open', () => {
+          console.log('[Listener] Data channel open to host');
+          statusText.textContent = "Connected • Waiting for audio broadcast...";
+          statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
+          joinForm.classList.add('hidden');
+          livePanel.classList.remove('hidden');
+          showToast("Connected to host room!");
+        });
+
+        hostDataConn.on('data', (data) => {
+          console.log('[Listener] Received data from host:', data);
+          if (data && data.type === 'ROOM_STATUS') {
+            if (data.broadcasting) {
+              statusText.textContent = "Host is broadcasting • Receiving stream";
             }
-          });
-
-          const audioTrack = displayStream.getAudioTracks()[0];
-          if (!audioTrack) {
-            alert('⚠️ No audio captured! Ensure you tick "Share tab audio" or "Also share audio".');
-            displayStream.getTracks().forEach(t => t.stop());
-            return;
           }
-
-          // Discard video track
-          displayStream.getVideoTracks().forEach(t => t.stop());
-          localAudioStream = new MediaStream([audioTrack]);
-
-          document.getElementById('start-broadcast-btn').textContent = "🟢 Broadcasting Live";
-          document.getElementById('start-broadcast-btn').classList.replace('bg-emerald-500', 'bg-zinc-800');
-          document.getElementById('start-broadcast-btn').classList.add('text-emerald-400');
-          document.getElementById('start-broadcast-btn').disabled = true;
-
-          // Dispatch to waiting listeners
-          waitingPeerIds.forEach((id) => callListener(id));
-        } catch (err) {
-          console.error(err);
-          alert('Could not capture audio: ' + err.message);
-        }
-      });
-    }
-
-    function callListener(peerId) {
-      if (!localAudioStream) return;
-      const call = peer.call(peerId, localAudioStream);
-      trackCall(call);
-    }
-
-    function trackCall(call) {
-      activeCalls.push(call);
-      updateListenerCount();
-      call.on('close', () => {
-        activeCalls = activeCalls.filter(c => c !== call);
-        updateListenerCount();
-      });
-    }
-
-    function updateListenerCount() {
-      const total = Math.max(waitingPeerIds.size, activeCalls.length);
-      listenerCountText.textContent = `Connected listeners: ${total}`;
-    }
-
-    // --- LISTENER INITIALIZATION ---
-    function initListener(code) {
-      lobbyPanel.classList.add('hidden');
-      listenerPanel.classList.remove('hidden');
-      activeListenerCode.textContent = code;
-      roleBadge.textContent = 'Listener';
-      roleBadge.classList.replace('bg-zinc-800', 'bg-indigo-900/60');
-      roleBadge.classList.add('text-indigo-300');
-
-      peer = new Peer(iceConfig);
-
-      peer.on('open', () => {
-        statusIndicator.classList.replace('bg-amber-500', 'bg-indigo-500');
-        statusIndicator.classList.replace('bg-zinc-600', 'bg-indigo-500');
-        
-        const hostPeerId = PEER_PREFIX + code;
-        listenerStatus.textContent = "Connecting to Room " + code + "...";
-
-        const conn = peer.connect(hostPeerId, { reliable: true });
-
-        conn.on('open', () => {
-          listenerStatus.textContent = "Connected! Waiting for host to share audio...";
         });
 
-        conn.on('error', () => {
-          listenerStatus.textContent = "Could not find host. Check the code.";
+        hostDataConn.on('close', () => {
+          console.log('[Listener] Host closed connection');
+          statusText.textContent = "Host disconnected";
+          statusDot.className = "w-3 h-3 rounded-full bg-red-500";
+          showToast("Host ended room session");
+          stopAudioVisualizer('listenerVisualizer', 'listenerVisualizerPlaceholder');
+        });
+
+        hostDataConn.on('error', (err) => {
+          console.warn('[Listener] Connection error:', err);
+          statusText.textContent = "Connection to host failed";
+          statusDot.className = "w-3 h-3 rounded-full bg-red-500";
         });
       });
 
+      // Listen for incoming media stream call from Host
       peer.on('call', (call) => {
+        console.log('[Listener] Incoming call from host:', call.peer);
+        incomingCall = call;
+
+        // Answer call with NO outbound stream
         call.answer();
 
-        call.on('stream', (stream) => {
-          remoteAudio.srcObject = stream;
-          listenerStatus.textContent = "🟢 Live audio stream received!";
-          listenerStatus.classList.add('text-emerald-400');
-          remoteAudio.play().catch(() => {
-            listenerStatus.textContent = "🔊 Audio ready! Tap the blue button.";
+        call.on('stream', (remoteStream) => {
+          console.log('[Listener] Received remote audio stream:', remoteStream.getAudioTracks());
+          const remoteAudio = document.getElementById('remoteAudio');
+          remoteAudio.srcObject = remoteStream;
+
+          // Attempt autoplay and handle browser autoplay policy
+          remoteAudio.play().then(() => {
+            console.log('[Listener] Remote audio playback started successfully');
+            document.getElementById('autoplayBanner').classList.add('hidden');
+          }).catch(err => {
+            console.warn('[Listener] Autoplay prevented by browser:', err);
+            // Show explicit unlock button
+            document.getElementById('autoplayBanner').classList.remove('hidden');
           });
+
+          statusText.textContent = "🔴 LIVE • Streaming Audio";
+          statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
+
+          // Start listener visualizer
+          startAudioVisualizer(remoteStream, 'listenerVisualizer', 'listenerVisualizerPlaceholder');
+        });
+
+        call.on('close', () => {
+          console.log('[Listener] Media call closed');
+          statusText.textContent = "Audio stream stopped by host";
+          statusDot.className = "w-3 h-3 rounded-full bg-amber-500";
+          stopAudioVisualizer('listenerVisualizer', 'listenerVisualizerPlaceholder');
         });
       });
 
       peer.on('error', (err) => {
-        console.error(err);
-        listenerStatus.textContent = "Connection issue: " + err.type;
-      });
-
-      document.getElementById('listen-btn').addEventListener('click', () => {
-        remoteAudio.play().then(() => {
-          document.getElementById('listen-btn').textContent = "🔊 Audio Playing";
-          document.getElementById('listen-btn').classList.replace('bg-indigo-600', 'bg-zinc-800');
-        }).catch(console.error);
+        console.error('[Listener] Peer error:', err);
+        btnJoin.disabled = false;
+        if (err.type === 'peer-unavailable') {
+          statusText.textContent = "Room not found (Host may be offline)";
+          statusDot.className = "w-3 h-3 rounded-full bg-red-500";
+          showToast("Room not found. Check code or verify host is live.");
+        } else {
+          statusText.textContent = `Connection error: ${err.type}`;
+          statusDot.className = "w-3 h-3 rounded-full bg-red-500";
+        }
       });
     }
+
+    function enableAudioPlayback() {
+      const remoteAudio = document.getElementById('remoteAudio');
+      if (remoteAudio) {
+        remoteAudio.play().then(() => {
+          document.getElementById('autoplayBanner').classList.add('hidden');
+          showToast("Audio active!");
+        }).catch(err => {
+          console.error("Enable audio error:", err);
+          showToast("Could not play audio. Please interact with the page.");
+        });
+      }
+      // Also resume AudioContext if suspended
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }
+
+    function setVolume(val) {
+      const remoteAudio = document.getElementById('remoteAudio');
+      if (remoteAudio) {
+        remoteAudio.volume = parseFloat(val);
+      }
+      document.getElementById('volumePercent').textContent = `${Math.round(val * 100)}%`;
+    }
+
+    function leaveRoom() {
+      cleanupCurrentMode();
+      initListenerMode();
+      showToast("Left room");
+    }
+
+    // ==========================================
+    // AUDIO VISUALIZER (Web Audio API)
+    // ==========================================
+
+    function startAudioVisualizer(stream, canvasId, placeholderId) {
+      const canvas = document.getElementById(canvasId);
+      const placeholder = document.getElementById(placeholderId);
+      if (!canvas) return;
+
+      try {
+        if (placeholder) placeholder.classList.add('hidden');
+
+        if (!audioContext || audioContext.state === 'closed') {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          audioContext = new AudioContextClass();
+        }
+
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+
+        const source = audioContext.createMediaStreamSource(stream);
+        analyserNode = audioContext.createAnalyser();
+        analyserNode.fftSize = 64;
+        source.connect(analyserNode);
+
+        const ctx = canvas.getContext('2d');
+        const bufferLength = analyserNode.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        function draw() {
+          visualizerAnimationId = requestAnimationFrame(draw);
+          analyserNode.getByteFrequencyData(dataArray);
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          const barWidth = (canvas.width / bufferLength) * 2;
+          let barHeight;
+          let x = 0;
+
+          for (let i = 0; i < bufferLength; i++) {
+            barHeight = (dataArray[i] / 255) * (canvas.height * 0.85);
+
+            // Spotify green gradient bars
+            const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+            gradient.addColorStop(0, '#1DB954');
+            gradient.addColorStop(1, '#1ed760');
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(x, canvas.height - barHeight, barWidth - 2, barHeight);
+
+            x += barWidth;
+          }
+        }
+
+        draw();
+      } catch (err) {
+        console.warn('Audio Visualizer setup skipped:', err);
+      }
+    }
+
+    function stopAudioVisualizer(canvasId, placeholderId) {
+      if (visualizerAnimationId) {
+        cancelAnimationFrame(visualizerAnimationId);
+        visualizerAnimationId = null;
+      }
+      const canvas = document.getElementById(canvasId);
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      const placeholder = document.getElementById(placeholderId);
+      if (placeholder) {
+        placeholder.classList.remove('hidden');
+      }
+    }
+
+    // Auto-detect room parameter on initial load
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('room')) {
+        switchMode('listen');
+      }
+    });
   </script>
 </body>
 </html>
