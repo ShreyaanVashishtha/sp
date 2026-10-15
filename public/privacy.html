@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Privacy Policy - JamRoom</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            spotify: {
+              green: '#1DB954',
+              greenHover: '#1ed760',
+              black: '#121212',
+              card: '#181818'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    body { background-color: #0c0d0e; color: #ffffff; }
+    .glass-panel {
+      background: rgba(24, 24, 24, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-spotify-green selection:text-black">
+
+  <!-- Header -->
+  <header class="border-b border-zinc-800/80 px-4 py-3 sm:px-8">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3 hover:opacity-90 transition">
+        <div class="w-8 h-8 rounded-full bg-spotify-green flex items-center justify-center">
+          <svg class="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg>
+        </div>
+        <span class="text-base font-bold text-white">JamRoom</span>
+      </a>
+      <a href="/" class="text-xs font-semibold text-zinc-400 hover:text-white transition">&larr; Back to App</a>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="max-w-3xl mx-auto px-4 py-12 flex-1">
+    <div class="glass-panel p-8 sm:p-12 rounded-2xl space-y-8">
+      <div class="space-y-2 border-b border-zinc-800 pb-6">
+        <h1 class="text-3xl font-extrabold tracking-tight text-white">Privacy Policy</h1>
+        <p class="text-xs text-zinc-400">Last updated: October 2026 • JamRoom Open Source Project</p>
+      </div>
+
+      <div class="space-y-6 text-sm text-zinc-300 leading-relaxed">
+        <section class="space-y-2">
+          <h2 class="text-lg font-bold text-white">1. Zero-Login & Zero Personal Data Collection</h2>
+          <p>JamRoom is built on a strict privacy-first foundation. We do not require account registration, passwords, email addresses, credit cards, or identity verification. We do not collect, harvest, profile, or sell your personal information.</p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-bold text-white">2. No Audio Recording or Permanent Storage</h2>
+          <p>All audio transmitted through JamRoom flows in real-time through temporary WebRTC media pipelines. Audio streams are <strong>never recorded, stored, transcribed, cached on disk, or analyzed</strong>. Once an audio packet is rendered in a participant's browser, it is instantly discarded from memory.</p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-bold text-white">3. Ephemeral Rooms & Access Tokens</h2>
+          <p>Rooms are generated on-demand using random numeric codes. When the host stops streaming or participants disconnect, the room and its associated cryptographic access tokens are completely dissolved. No room history, participant rosters, or playback records are retained.</p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-bold text-white">4. Third-Party Infrastructure</h2>
+          <p>JamRoom relies on minimal, trusted infrastructure providers to deliver real-time WebRTC media:</p>
+          <ul class="list-disc list-inside space-y-1 text-zinc-400 pl-2">
+            <li><strong class="text-zinc-200">LiveKit Cloud:</strong> Operates the Selective Forwarding Unit (SFU) network that routes live WebRTC audio packets between participants. Media is forwarded in-memory without persistent storage.</li>
+            <li><strong class="text-zinc-200">Vercel:</strong> Hosts the static web client and token-minting serverless functions. Standard ephemeral edge logs (IP addresses and request timestamps) are retained in accordance with Vercel's standard security policies.</li>
+          </ul>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-bold text-white">5. Cookies & Local Tracking</h2>
+          <p>JamRoom does not use marketing cookies, tracking pixels, or third-party analytics trackers. Minimal ephemeral state (such as room codes or volume settings) may be temporarily held in your browser's active session memory and is never transmitted to marketing entities.</p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-bold text-white">6. Open Source Transparency</h2>
+          <p>JamRoom is completely open source under the MIT License. The entire source code is publicly auditable on GitHub to verify our privacy and security claims.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-900 py-6 px-4 text-center text-xs text-zinc-500">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p>JamRoom • Open Source P2P / SFU Audio Broadcast</p>
+      <div class="flex items-center gap-4 text-zinc-400">
+        <a href="/privacy.html" class="hover:text-spotify-green transition text-spotify-green">Privacy Policy</a>
+        <a href="/terms.html" class="hover:text-spotify-green transition">Terms & Disclaimer</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

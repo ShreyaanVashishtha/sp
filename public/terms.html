@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Terms & Conditions & Legal Disclaimer - JamRoom</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            spotify: {
+              green: '#1DB954',
+              greenHover: '#1ed760',
+              black: '#121212',
+              card: '#181818'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    body { background-color: #0c0d0e; color: #ffffff; }
+    .glass-panel {
+      background: rgba(24, 24, 24, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-spotify-green selection:text-black">
+
+  <!-- Header -->
+  <header class="border-b border-zinc-800/80 px-4 py-3 sm:px-8">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3 hover:opacity-90 transition">
+        <div class="w-8 h-8 rounded-full bg-spotify-green flex items-center justify-center">
+          <svg class="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg>
+        </div>
+        <span class="text-base font-bold text-white">JamRoom</span>
+      </a>
+      <a href="/" class="text-xs font-semibold text-zinc-400 hover:text-white transition">&larr; Back to App</a>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="max-w-3xl mx-auto px-4 py-12 flex-1">
+    <div class="glass-panel p-8 sm:p-12 rounded-2xl space-y-8">
+      <div class="space-y-2 border-b border-zinc-800 pb-6">
+        <h1 class="text-3xl font-extrabold tracking-tight text-white">Terms of Service & Legal Disclaimer</h1>
+        <p class="text-xs text-zinc-400">Last updated: October 2026 • JamRoom Open Source Project</p>
+      </div>
+
+      <div class="space-y-6 text-sm text-zinc-300 leading-relaxed">
+        
+        <!-- Trademark & Affiliation Callout -->
+        <div class="p-4 bg-zinc-900/90 rounded-xl border border-amber-500/40 text-amber-200/90 space-y-1">
+          <div class="font-bold text-amber-300 flex items-center gap-2">
+            <span>⚖️</span> Third-Party Trademark Disclaimer
+          </div>
+          <p class="text-xs leading-relaxed">
+            JamRoom is an independent open-source project. JamRoom is <strong>not affiliated with, associated with, authorized by, endorsed by, or in any way officially connected with Spotify AB</strong>, YouTube, Google, Apple, or any of their subsidiaries or affiliates. All product and company names are trademarks™ or registered® trademarks of their respective holders.
+          </p>
+        </div>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-bold text-white">1. Nature of the Software</h2>
+          <p>JamRoom is a general-purpose, peer-to-cloud WebRTC audio transmission utility designed for real-time private communications, personal research, and software development. JamRoom does <strong>not provide, index, host, store, catalog, or distribute audio tracks or copyright-protected files</strong>.</p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-bold text-white">2. Copyright, Fair Use & User Responsibility</h2>
+          <p>When using browser screen capture (<code>getDisplayMedia</code>) to stream audio from your local system or browser tab:</p>
+          <ul class="list-disc list-inside space-y-1 text-zinc-400 pl-2">
+            <li>You represent and warrant that you possess all necessary rights, licenses, permissions, or legal authority to stream the audio being broadcast.</li>
+            <li>You agree to comply with all applicable local, national, and international copyright, intellectual property, and digital rights laws (including the DMCA).</li>
+            <li>JamRoom's contributors and maintainers assume no liability or responsibility for any user-generated or user-broadcasted content.</li>
+          </ul>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-bold text-white">3. Acceptable Use & Safety Policy</h2>
+          <p>You agree not to use JamRoom to:</p>
+          <ul class="list-disc list-inside space-y-1 text-zinc-400 pl-2">
+            <li>Broadcast hate speech, harassment, defamation, threats, or illegal audio material.</li>
+            <li>Conduct unauthorized commercial restreaming or public exhibitions of copyrighted materials in violation of third-party terms of service.</li>
+            <li>Attempt to flood, disrupt, or launch denial-of-service attacks against signaling servers or relay networks.</li>
+          </ul>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-bold text-white">4. "AS IS" Warranty & Limitation of Liability</h2>
+          <p class="font-mono text-xs text-zinc-400 bg-zinc-950 p-4 rounded-xl border border-zinc-800 leading-relaxed uppercase">
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS, CONTRIBUTORS, OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+          </p>
+        </section>
+
+        <section class="space-y-2">
+          <h2 class="text-lg font-bold text-white">5. DMCA & Takedown Notices</h2>
+          <p>Because JamRoom operates exclusively as transient real-time WebRTC forwarding software without permanent file storage or caching, JamRoom does not retain files or audio records. If you believe your copyrighted work is being unlawfully transmitted via a specific third-party deployed instance of this open-source code, notices should be addressed to the infrastructure host or the individual operating that specific deployment.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-900 py-6 px-4 text-center text-xs text-zinc-500">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p>JamRoom • Open Source P2P / SFU Audio Broadcast</p>
+      <div class="flex items-center gap-4 text-zinc-400">
+        <a href="/privacy.html" class="hover:text-spotify-green transition">Privacy Policy</a>
+        <a href="/terms.html" class="hover:text-spotify-green transition text-spotify-green">Terms & Disclaimer</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
