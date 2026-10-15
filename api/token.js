@@ -16,9 +16,10 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Missing room query parameter' });
   }
 
-  const livekitUrl = process.env.LIVEKIT_URL;
-  const apiKey = process.env.LIVEKIT_API_KEY;
-  const apiSecret = process.env.LIVEKIT_API_SECRET;
+  // Clean environment variables (strip quotes, whitespace, newlines, trailing slashes)
+  let livekitUrl = (process.env.LIVEKIT_URL || '').trim().replace(/^["']|["']$/g, '').replace(/\/+$/, '');
+  let apiKey = (process.env.LIVEKIT_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+  let apiSecret = (process.env.LIVEKIT_API_SECRET || '').trim().replace(/^["']|["']$/g, '');
 
   if (!livekitUrl || !apiKey || !apiSecret) {
     return res.status(500).json({
@@ -32,15 +33,34 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  // Auto-detect and fix if user swapped API Key and API Secret
+  // LiveKit API keys always start with 'API' (e.g. APIxxxxxxxx)
+  if (apiSecret.startsWith('API') && !apiKey.startsWith('API')) {
+    console.log('[LiveKit] Detected swapped API Key and API Secret. Automatically swapping back.');
+    const temp = apiKey;
+    apiKey = apiSecret;
+    apiSecret = temp;
+  }
+
+  // Ensure URL uses wss:// protocol
+  if (livekitUrl.startsWith('http://')) {
+    livekitUrl = livekitUrl.replace('http://', 'ws://');
+  } else if (livekitUrl.startsWith('https://')) {
+    livekitUrl = livekitUrl.replace('https://', 'wss://');
+  } else if (!livekitUrl.startsWith('wss://') && !livekitUrl.startsWith('ws://')) {
+    livekitUrl = `wss://${livekitUrl}`;
+  }
+
   try {
     const isHostBool = isHost === 'true';
     const participantName = username || (isHostBool ? 'Host' : 'Listener');
     const participantIdentity = `${isHostBool ? 'host' : 'listener'}_${Math.random().toString(36).substring(2, 8)}`;
 
+    // Create AccessToken with numeric seconds TTL (6 hours = 21600s)
     const at = new AccessToken(apiKey, apiSecret, {
       identity: participantIdentity,
       name: participantName,
-      ttl: '6h'
+      ttl: 6 * 3600
     });
 
     at.addGrant({
@@ -56,6 +76,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       token,
       livekitUrl,
+      apiKeyPrefix: apiKey.slice(0, 8),
       identity: participantIdentity,
       room: `jam_${room}`
     });

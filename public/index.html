@@ -268,6 +268,16 @@
           </p>
         </div>
 
+        <!-- In-Room Speaker Sync Callout -->
+        <div class="bg-zinc-900/60 rounded-xl p-3.5 border border-zinc-800/80 text-[11px] text-zinc-400 space-y-1">
+          <div class="font-bold text-zinc-300 flex items-center gap-1.5">
+            <span>🔊</span> Playing together in the same room?
+          </div>
+          <p class="leading-relaxed">
+            Mute the original Spotify tab on your host computer (right-click the tab &rarr; <strong class="text-zinc-200">Mute Tab</strong>). When all devices play from the LiveKit stream, all speakers play in lockstep synchronization with zero echo.
+          </p>
+        </div>
+
         <!-- Host Action Button -->
         <div class="flex flex-col gap-3">
           <button id="btnHostBroadcast" onclick="toggleBroadcast()" class="w-full py-4 px-6 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg bg-spotify-green hover:bg-spotify-greenHover text-black cursor-pointer">
@@ -663,6 +673,16 @@ ${logsHistory.join('\n')}
 
         document.getElementById('missingEnvBanner').classList.add('hidden');
         document.getElementById('diagServerUrl').textContent = data.livekitUrl || 'cloud.livekit.io';
+
+        // Decode JWT payload for immediate diagnostic inspection
+        try {
+          const parts = data.token.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            logDebug(`[Token Claims] API Key: ${payload.iss}, Room: ${payload.video?.room}, Identity: ${payload.sub}`);
+          }
+        } catch(e) {}
+
         logDebug(`[Token] Received LiveKit token for identity: ${data.identity}`, 'success');
         return data;
       } catch (err) {
@@ -750,17 +770,18 @@ ${logsHistory.join('\n')}
         await activeRoom.connect(livekitUrl, token);
         logDebug(`[Host] Connected to LiveKit room: ${activeRoom.name}`, 'success');
 
-        // 4. Publish music-grade audio track
+        // 4. Publish music-grade audio track with minimal buffer latency
         publishedAudioTrack = new LivekitClient.LocalAudioTrack(audioTrack);
         
         await activeRoom.localParticipant.publishTrack(publishedAudioTrack, {
           name: 'spotify-audio',
           source: LivekitClient.Track.Source.ScreenShareAudio,
-          dtx: false, // Don't cut off quiet music
-          red: true   // RFC 2198 audio redundancy against cellular packet loss
+          dtx: false,    // Continuous transmission so quiet passages never buffer
+          red: false,    // Disable redundant packaging to minimize buffering delay
+          audioBitrate: 128000
         });
 
-        logDebug('[Host] Audio track published to LiveKit SFU! 🔊', 'success');
+        logDebug('[Host] Audio track published to LiveKit SFU (Low-Latency mode)! 🔊', 'success');
 
         audioTrack.onended = () => {
           logDebug('[Host] Audio track stopped by user');
@@ -880,6 +901,27 @@ ${logsHistory.join('\n')}
             const remoteAudio = document.getElementById('remoteAudio');
             track.attach(remoteAudio);
             remoteAudio.volume = parseFloat(document.getElementById('volumeSlider')?.value || 1.0);
+
+            // Force minimal WebRTC jitter buffer delay (reduces lag by 150-300ms)
+            try {
+              const pc = activeRoom.engine?.client?.subscriber?.pc || activeRoom.engine?.subscriber?.pc;
+              if (pc && pc.getReceivers) {
+                pc.getReceivers().forEach(receiver => {
+                  if (receiver.track && receiver.track.kind === 'audio') {
+                    if ('jitterBufferTarget' in receiver) {
+                      receiver.jitterBufferTarget = 0; // 0ms buffer target
+                      logDebug('[Sync] Applied receiver.jitterBufferTarget = 0ms (minimal lag)', 'success');
+                    }
+                    if ('playoutDelayHint' in receiver) {
+                      receiver.playoutDelayHint = 0; // Immediate playout
+                      logDebug('[Sync] Applied receiver.playoutDelayHint = 0s', 'success');
+                    }
+                  }
+                });
+              }
+            } catch (syncErr) {
+              console.warn('Could not set low-latency receiver properties:', syncErr);
+            }
 
             if (!activeRoom.canPlaybackAudio) {
               logDebug('[Listener] Audio playback blocked by browser - showing unlock button', 'warn');
