@@ -77,3 +77,19 @@ Or open `public/index.html` directly in any web browser.
 1. Open the web app or click the invite link shared by the host.
 2. If entering manually, type the 6-digit room code and click **Connect to Room**.
 3. Tap **"Tap to Enable Audio 🔊"** if prompted by the browser to start listening.
+
+---
+
+## 📱 Mobile (iPhone & Android) Troubleshooting
+
+If you connect with your phone and don't hear sound:
+
+1. **iPhone Ring/Silent Switch:**
+   - Check the physical switch on the left edge of your iPhone. If it shows **orange (Silent Mode)**, iOS Safari silences all `<audio>` playback! Flip it to **Ring mode**.
+2. **Autoplay Policy:**
+   - Tap **"🔊 Tap to Enable Audio"** on the screen. iOS Safari and Android Chrome prevent background media from playing without a direct screen tap.
+3. **Cellular Networks (4G/5G):**
+   - Carrier-Grade NAT (CGNAT) on cellular networks is supported via built-in free OpenRelay **TURN servers**, allowing desktop hosts and mobile phones on cellular data to connect seamlessly.
+4. **Volume:**
+   - Ensure your physical device volume buttons are turned up.
+
