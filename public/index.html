@@ -485,24 +485,22 @@
   <!-- Application Logic -->
   <script>
     // Configuration & ICE Servers (STUN + TURN for 4G/5G Cellular and Symmetric NAT)
+    // Verified STUN Servers (Google, Cloudflare, Twilio)
     const PEER_CONFIG = {
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
           { urls: 'stun:stun2.l.google.com:19302' },
-          {
-            urls: [
-              'turn:openrelay.metered.ca:80',
-              'turn:openrelay.metered.ca:443',
-              'turn:openrelay.metered.ca:443?transport=tcp'
-            ],
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
-          }
-        ]
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' },
+          { urls: 'stun:stun.cloudflare.com:3478' },
+          { urls: 'stun:global.stun.twilio.com:3478' }
+        ],
+        iceCandidatePoolSize: 10
       }
     };
+
 
     const ROOM_PREFIX = 'spotijam_';
 
@@ -900,8 +898,27 @@ ${logsHistory.join('\n')}
       });
     }
 
+    const callDispatchTimestamps = new Map();
+
     function dispatchCallToListener(listenerId) {
       if (!peer || !hostLocalStream) return;
+
+      const now = Date.now();
+      const lastCall = callDispatchTimestamps.get(listenerId) || 0;
+      if (now - lastCall < 2000) {
+        logDebug(`[Host] Skipped duplicate call to ${listenerId} (debounced ${now - lastCall}ms)`);
+        return;
+      }
+      callDispatchTimestamps.set(listenerId, now);
+
+      if (activeCalls.has(listenerId)) {
+        logDebug(`[Host] Closing previous call with ${listenerId} before making fresh call`);
+        try {
+          activeCalls.get(listenerId).close();
+        } catch (e) {}
+        activeCalls.delete(listenerId);
+      }
+
       try {
         logDebug(`[Host] Calling listener: ${listenerId}`);
         const call = peer.call(listenerId, hostLocalStream);
@@ -1125,7 +1142,13 @@ ${logsHistory.join('\n')}
           livePanel.classList.remove('hidden');
           showToast("Connected to host room!");
           
-          hostDataConn.send({ type: 'REQUEST_STREAM' });
+          // Fallback: Only send REQUEST_STREAM if no incoming call arrives after 3.5s
+          setTimeout(() => {
+            if (!incomingCall && hostDataConn && hostDataConn.open) {
+              logDebug('[Listener] No call received after 3.5s, requesting stream from host...');
+              hostDataConn.send({ type: 'REQUEST_STREAM' });
+            }
+          }, 3500);
           updateDiagnosticsView();
         });
 
@@ -1158,15 +1181,23 @@ ${logsHistory.join('\n')}
       // Listen for incoming media call from Host
       peer.on('call', (call) => {
         logDebug(`[Listener] Received incoming WebRTC call from: ${call.peer}`, 'success');
+
+        if (incomingCall) {
+          logDebug('[Listener] Closing prior incoming call to negotiate new call');
+          try { incomingCall.close(); } catch(e){}
+          incomingCall = null;
+        }
         incomingCall = call;
 
         if (call.peerConnection) {
           call.peerConnection.addEventListener('iceconnectionstatechange', () => {
-            logDebug(`[Listener ICE] state changed to: ${call.peerConnection.iceConnectionState}`);
+            const state = call.peerConnection.iceConnectionState;
+            logDebug(`[Listener ICE] ${state}`, state === 'connected' ? 'success' : 'info');
             updateDiagnosticsView();
           });
           call.peerConnection.addEventListener('connectionstatechange', () => {
-            logDebug(`[Listener WebRTC] state changed to: ${call.peerConnection.connectionState}`);
+            const state = call.peerConnection.connectionState;
+            logDebug(`[Listener WebRTC] ${state}`, state === 'connected' ? 'success' : 'info');
             updateDiagnosticsView();
           });
         }
@@ -1178,15 +1209,32 @@ ${logsHistory.join('\n')}
           const audioTracks = remoteStream.getAudioTracks();
           logDebug(`[Listener] Received stream with ${audioTracks.length} audio tracks`, 'success');
           
+          if (audioTracks.length === 0) {
+            logDebug('[Listener] ⚠️ Stream has 0 audio tracks! Host did not share audio.', 'error');
+            return;
+          }
+
           audioTracks.forEach((track, i) => {
             track.enabled = true;
-            logDebug(`[Listener Track #${i}] kind:${track.kind}, readyState:${track.readyState}, muted:${track.muted}`);
-            track.onmute = () => logDebug(`[Listener Track #${i}] muted (waiting for audio packets)`);
-            track.onunmute = () => logDebug(`[Listener Track #${i}] unmuted (audio packets arriving!)`, 'success');
+            logDebug(`[Listener Track #${i}] kind:${track.kind}, state:${track.readyState}, muted:${track.muted}`);
+
+            track.onmute = () => logDebug(`[Listener Track #${i}] muted (waiting for RTP packets)...`, 'warn');
+            track.onunmute = () => {
+              logDebug(`[Listener Track #${i}] unmuted (RTP audio packets flowing!) 🔊`, 'success');
+              const a = document.getElementById('remoteAudio');
+              if (a) a.play().catch(e => logDebug(`Play on unmute: ${e.message}`));
+              document.getElementById('autoplayBanner').classList.add('hidden');
+              document.getElementById('listenerLiveLabel').textContent = "Live Audio Playing 🔊";
+              statusText.textContent = "🔴 LIVE • Streaming Audio 🔊";
+              statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
+              updateDiagnosticsView();
+            };
           });
 
           const remoteAudio = document.getElementById('remoteAudio');
-          remoteAudio.srcObject = remoteStream;
+          if (remoteAudio.srcObject !== remoteStream) {
+            remoteAudio.srcObject = remoteStream;
+          }
           remoteAudio.muted = false;
           remoteAudio.volume = parseFloat(document.getElementById('volumeSlider')?.value || 1.0);
 
@@ -1199,7 +1247,7 @@ ${logsHistory.join('\n')}
               statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
               document.getElementById('listenerLiveLabel').textContent = "Live Audio Playing 🔊";
             }).catch(err => {
-              logDebug(`[Listener] Autoplay blocked by mobile browser policy: ${err.message}`, 'warn');
+              logDebug(`[Listener] Autoplay restriction: ${err.message}`, 'warn');
               document.getElementById('autoplayBanner').classList.remove('hidden');
               statusText.textContent = "Audio ready • Tap button to unmute";
               statusDot.className = "w-3 h-3 rounded-full bg-amber-500";
