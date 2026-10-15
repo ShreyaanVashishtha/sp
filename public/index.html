@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>JamRoom - Zero-Login WebRTC Audio Broadcast</title>
+  <title>JamRoom - LiveKit WebRTC Audio Broadcast Room</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -36,8 +36,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
-  <!-- PeerJS CDN -->
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- LiveKit Client SDK (Modern WebRTC SFU) -->
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
 
   <style>
     body {
@@ -76,7 +76,6 @@
       100% { transform: scaleY(1); }
     }
 
-    /* Custom scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
     }
@@ -110,9 +109,9 @@
         <div>
           <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
             JamRoom
-            <span class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded-full border border-zinc-700">P2P Audio</span>
+            <span class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 bg-zinc-800 text-emerald-400 rounded-full border border-zinc-700">LiveKit SFU</span>
           </h1>
-          <p class="text-xs text-zinc-400">Zero-login sub-second Spotify & system audio streaming</p>
+          <p class="text-xs text-zinc-400">Zero-loss sub-second audio sync across all devices</p>
         </div>
       </div>
 
@@ -128,13 +127,24 @@
     </div>
   </header>
 
-  <!-- Insecure Context Warning (if accessed via http:// and not localhost) -->
-  <div id="insecureBanner" class="hidden relative z-20 max-w-2xl mx-auto mt-4 px-4">
-    <div class="p-3 bg-red-950/80 border border-red-700/80 rounded-xl text-xs text-red-200 flex items-start gap-2.5">
-      <span class="text-base">⚠️</span>
-      <div>
-        <p class="font-bold">Insecure HTTP Connection Detected</p>
-        <p class="text-red-300 mt-0.5">Mobile browsers block WebRTC media when accessed over plain <code class="bg-red-900/50 px-1 rounded">http://</code> on local IPs. Deploy to Vercel (HTTPS) or use a secure tunnel (e.g., ngrok/Cloudflare) for mobile testing.</p>
+  <!-- Missing Env Banner (Visible if LiveKit credentials not yet added in Vercel) -->
+  <div id="missingEnvBanner" class="hidden relative z-20 max-w-2xl mx-auto mt-4 px-4">
+    <div class="p-4 bg-amber-950/90 border border-amber-600/80 rounded-2xl text-xs text-amber-200 shadow-xl space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="font-bold text-amber-300 text-sm flex items-center gap-2">
+          <span>⚡</span> LiveKit Cloud Setup Required
+        </span>
+        <a href="https://cloud.livekit.io" target="_blank" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-black font-bold text-[11px] transition">
+          Get Free Keys &rarr;
+        </a>
+      </div>
+      <p class="text-amber-200/90 leading-relaxed">
+        LiveKit powers sub-second audio broadcasting without NAT/cellular issues. To activate, sign up for free at <a href="https://cloud.livekit.io" target="_blank" class="underline text-amber-300 font-semibold">cloud.livekit.io</a> and add these 3 variables to your <strong>Vercel Project Settings &rarr; Environment Variables</strong>:
+      </p>
+      <div class="bg-black/60 p-2.5 rounded-lg font-mono text-[11px] text-amber-100 select-all space-y-1">
+        <div>LIVEKIT_URL=wss://your-project.livekit.cloud</div>
+        <div>LIVEKIT_API_KEY=APIxxxxxxxxx</div>
+        <div>LIVEKIT_API_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</div>
       </div>
     </div>
   </div>
@@ -145,9 +155,9 @@
     <!-- Landing View: Mode Selection -->
     <div id="viewLanding" class="space-y-6">
       <div class="text-center space-y-3">
-        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Stream audio with friends.<br><span class="text-spotify-green">Instant. Lossless. Free.</span></h2>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Stream audio with friends.<br><span class="text-spotify-green">Sub-second. Lossless. Free.</span></h2>
         <p class="text-sm text-zinc-400 max-w-md mx-auto">
-          Share your Spotify, YouTube, or browser tab audio in real-time. No sign-ups or downloads required.
+          Share your Spotify, YouTube, or browser tab audio in perfect sync. Powered by modern LiveKit SFU WebRTC.
         </p>
       </div>
 
@@ -162,7 +172,7 @@
             </div>
             <div>
               <h3 class="text-lg font-bold text-white group-hover:text-spotify-green transition">Host a Broadcast</h3>
-              <p class="text-xs text-zinc-400 mt-1">Capture desktop/tab audio and stream it to listeners with sub-second WebRTC latency.</p>
+              <p class="text-xs text-zinc-400 mt-1">Capture desktop tab audio and broadcast to unlimited listeners with zero upload lag.</p>
             </div>
           </div>
           <div class="flex items-center text-xs font-semibold text-spotify-green gap-1">
@@ -181,7 +191,7 @@
             </div>
             <div>
               <h3 class="text-lg font-bold text-white group-hover:text-emerald-400 transition">Join as Listener</h3>
-              <p class="text-xs text-zinc-400 mt-1">Enter a 6-digit room code to listen in from any desktop or mobile browser.</p>
+              <p class="text-xs text-zinc-400 mt-1">Connect instantly from any phone, tablet, or PC via 6-digit room code.</p>
             </div>
           </div>
           <div class="flex items-center text-xs font-semibold text-emerald-400 gap-1">
@@ -200,13 +210,13 @@
         <div class="flex items-center justify-between pb-4 border-b border-zinc-800">
           <div class="flex items-center gap-2">
             <span id="hostStatusDot" class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
-            <span id="hostStatusText" class="text-sm font-semibold text-zinc-300">Initializing room...</span>
+            <span id="hostStatusText" class="text-sm font-semibold text-zinc-300">Ready to create room</span>
           </div>
           <div class="flex items-center gap-2 text-xs font-medium text-zinc-400 bg-zinc-900/80 px-3 py-1.5 rounded-full border border-zinc-800">
             <svg class="w-4 h-4 text-spotify-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
             </svg>
-            <span id="hostListenerCount">0 listeners connected</span>
+            <span id="hostListenerCount">0 listeners in room</span>
           </div>
         </div>
 
@@ -251,16 +261,16 @@
             <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            How to stream audio (Crucial on Mac):
+            Spotify Tab Audio Streaming (Important on Mac):
           </div>
           <p class="leading-relaxed text-zinc-400">
-            On macOS, browsers <strong class="text-amber-400">cannot capture audio from desktop apps</strong> (like native Spotify app). To stream music, play Spotify in a <strong class="text-emerald-400">Chrome/Edge browser tab</strong> (<a href="https://open.spotify.com" target="_blank" class="underline text-spotify-green">open.spotify.com</a>) and select that <strong class="text-zinc-200">Chrome Tab</strong> with <strong class="text-emerald-400">"Also share tab audio"</strong> checked!
+            Play music in a <strong class="text-emerald-400">Chrome/Edge browser tab</strong> (<a href="https://open.spotify.com" target="_blank" class="underline text-spotify-green">open.spotify.com</a>). When prompted, select that <strong class="text-zinc-200">Chrome Tab</strong> and verify the box <strong class="text-emerald-400">"Also share tab audio"</strong> is checked.
           </p>
         </div>
 
         <!-- Host Action Button -->
         <div class="flex flex-col gap-3">
-          <button id="btnHostBroadcast" onclick="toggleBroadcast()" disabled class="w-full py-4 px-6 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg bg-spotify-green hover:bg-spotify-greenHover text-black disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+          <button id="btnHostBroadcast" onclick="toggleBroadcast()" class="w-full py-4 px-6 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg bg-spotify-green hover:bg-spotify-greenHover text-black cursor-pointer">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -282,7 +292,7 @@
             <span id="listenerStatusDot" class="w-3 h-3 rounded-full bg-zinc-600"></span>
             <span id="listenerStatusText" class="text-sm font-semibold text-zinc-300">Ready to join</span>
           </div>
-          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">Listener Mode</span>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">LiveKit Audio</span>
         </div>
 
         <!-- Join Form (When not connected) -->
@@ -324,8 +334,8 @@
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-bold text-white">Audio Paused by Browser</p>
-                <p class="text-xs text-zinc-300">Tap below to unpause live audio playback.</p>
+                <p class="text-sm font-bold text-white">Browser Audio Permission</p>
+                <p class="text-xs text-zinc-300">Tap below to unlock live audio playback on your phone.</p>
               </div>
             </div>
             <button 
@@ -346,7 +356,7 @@
               <div class="wave-bar"></div>
             </div>
             <div id="listenerLiveLabel" class="text-xs font-semibold text-zinc-400">
-              Receiving live audio feed
+              Connected to LiveKit SFU Room
             </div>
           </div>
 
@@ -375,34 +385,12 @@
             </div>
           </div>
 
-          <!-- Mobile / iPhone Audio Troubleshooting Note -->
-          <div class="p-3.5 bg-zinc-900/90 rounded-xl border border-zinc-800 text-[11px] text-zinc-400 space-y-1.5">
-            <div class="font-bold text-zinc-200 flex items-center gap-1.5">
-              <span>📱</span> Can't hear anything on mobile?
-            </div>
-            <ul class="list-disc list-inside space-y-1 text-zinc-400 leading-relaxed">
-              <li><strong class="text-zinc-200">iPhone Silent Switch:</strong> Ensure the physical Silent/Ring switch on the side of your iPhone is <span class="text-amber-400 font-semibold">NOT showing orange</span> (Silent mode mutes Safari audio).</li>
-              <li><strong class="text-zinc-200">Volume level:</strong> Check physical phone volume buttons.</li>
-              <li><strong class="text-zinc-200">Audio permission:</strong> Tap anywhere or click <em>"Tap to Enable Audio"</em>.</li>
-            </ul>
-          </div>
-
-          <!-- Action Buttons (Reconnect / Leave) -->
-          <div class="flex gap-2">
-            <button 
-              onclick="requestStreamRefresh()" 
-              class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition flex items-center justify-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-spotify-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span>Refresh Audio</span>
-            </button>
-            <button 
-              onclick="leaveRoom()" 
-              class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-zinc-800 transition">
-              Disconnect
-            </button>
-          </div>
+          <!-- Disconnect Button -->
+          <button 
+            onclick="leaveRoom()" 
+            class="w-full py-2.5 px-3 rounded-xl text-xs font-semibold text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-zinc-800 transition">
+            Disconnect from Room
+          </button>
 
         </div>
 
@@ -417,7 +405,7 @@
       <div class="p-4 border-b border-zinc-800 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <span class="text-base">🐞</span>
-          <h3 class="text-sm font-bold text-white">Live Diagnostics & WebRTC Inspector</h3>
+          <h3 class="text-sm font-bold text-white">LiveKit SFU Diagnostics</h3>
         </div>
         <button onclick="toggleDiagnosticsModal(false)" class="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -427,14 +415,12 @@
       <div class="p-4 overflow-y-auto space-y-4 text-xs font-mono">
         <!-- Live status table -->
         <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800 space-y-1.5 text-zinc-300">
-          <div class="flex justify-between"><span class="text-zinc-500">Protocol:</span><span id="diagProtocol" class="font-bold">--</span></div>
-          <div class="flex justify-between"><span class="text-zinc-500">Mode:</span><span id="diagMode" class="font-bold">--</span></div>
-          <div class="flex justify-between"><span class="text-zinc-500">Peer ID:</span><span id="diagPeerId" class="text-emerald-400">--</span></div>
-          <div class="flex justify-between"><span class="text-zinc-500">Target Host:</span><span id="diagTargetHost">--</span></div>
-          <div class="flex justify-between"><span class="text-zinc-500">Data Channel:</span><span id="diagDataChannel">--</span></div>
-          <div class="flex justify-between"><span class="text-zinc-500">ICE State:</span><span id="diagIceState" class="font-bold">--</span></div>
-          <div class="flex justify-between"><span class="text-zinc-500">Audio Track:</span><span id="diagTrack">--</span></div>
-          <div class="flex justify-between"><span class="text-zinc-500">Audio Element:</span><span id="diagAudioElem">--</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">SFU Connection:</span><span id="diagLivekitState" class="font-bold">--</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">LiveKit Server:</span><span id="diagServerUrl" class="text-emerald-400">--</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">Room Name:</span><span id="diagRoomName">--</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">Participants:</span><span id="diagParticipants">--</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">Audio Track Subscribed:</span><span id="diagTrackSubscribed">--</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">Audio Playback Allowed:</span><span id="diagCanPlay">--</span></div>
         </div>
 
         <!-- Real-time Event Log -->
@@ -444,14 +430,13 @@
             <span id="diagLogCount" class="text-zinc-500 text-[10px]">0 logs</span>
           </div>
           <div id="diagLogsContainer" class="bg-zinc-950 p-3 rounded-xl border border-zinc-800 h-44 overflow-y-auto text-[11px] space-y-1 text-zinc-400 font-mono select-all">
-            <!-- Log entries will be added here -->
           </div>
         </div>
       </div>
 
       <div class="p-3 border-t border-zinc-800 bg-zinc-900/60 flex items-center justify-between gap-2">
         <button onclick="copyDiagnosticsReport()" class="flex-1 py-2 px-3 rounded-xl bg-spotify-green hover:bg-spotify-greenHover text-black font-bold text-xs transition">
-          📋 Copy Full Diagnostic Report
+          📋 Copy Diagnostic Report
         </button>
         <button onclick="clearDiagnosticsLogs()" class="py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs transition">
           Clear
@@ -460,7 +445,7 @@
     </div>
   </div>
 
-  <!-- Offscreen Remote Audio Element (Never use display:none or class="hidden" as WebKit/iOS mutes it completely) -->
+  <!-- Offscreen Audio Element for LiveKit Audio Output -->
   <audio 
     id="remoteAudio" 
     autoplay 
@@ -474,9 +459,9 @@
     <span id="toastMsg">Message</span>
   </div>
 
-  <!-- Footer with Diagnostics Button -->
+  <!-- Footer -->
   <footer class="relative z-10 border-t border-zinc-900 py-3 px-4 text-center text-xs text-zinc-500 flex flex-col sm:flex-row items-center justify-between gap-2 max-w-4xl mx-auto w-full">
-    <p>P2P Audio Room • Sub-second WebRTC streaming via PeerJS & STUN/TURN</p>
+    <p>JamRoom • Multi-device WebRTC Audio Sync via LiveKit Cloud SFU</p>
     <button onclick="toggleDiagnosticsModal(true)" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-spotify-green border border-zinc-800 text-xs transition font-mono">
       <span>🐞</span> Diagnostics & Logs
     </button>
@@ -484,41 +469,11 @@
 
   <!-- Application Logic -->
   <script>
-    // Configuration & ICE Servers (STUN + TURN for 4G/5G Cellular and Symmetric NAT)
-    // Verified STUN Servers (Google, Cloudflare, Twilio)
-    const PEER_CONFIG = {
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-          { urls: 'stun:stun.cloudflare.com:3478' },
-          { urls: 'stun:global.stun.twilio.com:3478' }
-        ],
-        iceCandidatePoolSize: 10
-      }
-    };
-
-
-    const ROOM_PREFIX = 'spotijam_';
-
     // State Variables
     let currentMode = null; // 'host' | 'listen' | null
-    let peer = null;
     let currentRoomCode = null;
-
-    // Host State
-    let hostLocalStream = null;
-    let connectedListeners = new Set(); // Set of listener peer IDs
-    let activeCalls = new Map(); // listenerPeerId -> mediaCall
-
-    // Listener State
-    let hostDataConn = null;
-    let incomingCall = null;
-    let audioContext = null;
-    let isAudioUnlocked = false;
+    let activeRoom = null; // LivekitClient.Room instance
+    let publishedAudioTrack = null;
 
     // Diagnostics State
     const logsHistory = [];
@@ -526,7 +481,7 @@
       const time = new Date().toLocaleTimeString();
       const logEntry = `[${time}] ${msg}`;
       logsHistory.push(logEntry);
-      if (logsHistory.length > 50) logsHistory.shift();
+      if (logsHistory.length > 60) logsHistory.shift();
       console.log(msg);
 
       const container = document.getElementById('diagLogsContainer');
@@ -534,7 +489,7 @@
       if (container) {
         const line = document.createElement('div');
         line.textContent = logEntry;
-        if (type === 'error') line.className = "text-red-400";
+        if (type === 'error') line.className = "text-red-400 font-semibold";
         else if (type === 'warn') line.className = "text-amber-400";
         else if (type === 'success') line.className = "text-emerald-400 font-semibold";
         container.appendChild(line);
@@ -563,115 +518,63 @@
     }
 
     function updateDiagnosticsView() {
-      const diagProtocol = document.getElementById('diagProtocol');
-      const diagMode = document.getElementById('diagMode');
-      const diagPeerId = document.getElementById('diagPeerId');
-      const diagTargetHost = document.getElementById('diagTargetHost');
-      const diagDataChannel = document.getElementById('diagDataChannel');
-      const diagIceState = document.getElementById('diagIceState');
-      const diagTrack = document.getElementById('diagTrack');
-      const diagAudioElem = document.getElementById('diagAudioElem');
+      const diagLivekitState = document.getElementById('diagLivekitState');
+      const diagServerUrl = document.getElementById('diagServerUrl');
+      const diagRoomName = document.getElementById('diagRoomName');
+      const diagParticipants = document.getElementById('diagParticipants');
+      const diagTrackSubscribed = document.getElementById('diagTrackSubscribed');
+      const diagCanPlay = document.getElementById('diagCanPlay');
 
-      const isSecure = window.isSecureContext;
-      if (diagProtocol) {
-        diagProtocol.textContent = `${window.location.protocol} (${isSecure ? 'Secure ✅' : 'INSECURE ❌'})`;
-        diagProtocol.className = isSecure ? 'font-bold text-emerald-400' : 'font-bold text-red-400';
-      }
-
-      if (diagMode) diagMode.textContent = currentMode || 'landing';
-      if (diagPeerId) diagPeerId.textContent = peer ? peer.id : '(Not connected)';
-      if (diagTargetHost) diagTargetHost.textContent = currentRoomCode ? `${ROOM_PREFIX}${currentRoomCode}` : 'None';
-
-      if (diagDataChannel) {
-        if (hostDataConn) {
-          diagDataChannel.textContent = hostDataConn.open ? 'OPEN ✅' : 'CONNECTING...';
-          diagDataChannel.className = hostDataConn.open ? 'font-bold text-emerald-400' : 'text-amber-400';
-        } else {
-          diagDataChannel.textContent = 'None';
-          diagDataChannel.className = 'text-zinc-500';
+      if (activeRoom) {
+        if (diagLivekitState) {
+          diagLivekitState.textContent = activeRoom.state;
+          diagLivekitState.className = activeRoom.state === 'connected' ? 'font-bold text-emerald-400' : 'text-amber-400';
         }
-      }
-
-      // Check active call ICE state
-      let currentCall = incomingCall || (activeCalls.size > 0 ? activeCalls.values().next().value : null);
-      if (diagIceState) {
-        if (currentCall && currentCall.peerConnection) {
-          const state = currentCall.peerConnection.iceConnectionState;
-          diagIceState.textContent = state;
-          if (state === 'connected' || state === 'completed') diagIceState.className = 'font-bold text-emerald-400';
-          else if (state === 'checking') diagIceState.className = 'font-bold text-amber-400';
-          else diagIceState.className = 'font-bold text-red-400';
-        } else {
-          diagIceState.textContent = 'No active peer connection';
-          diagIceState.className = 'text-zinc-500';
+        if (diagRoomName) diagRoomName.textContent = activeRoom.name || '--';
+        if (diagParticipants) diagParticipants.textContent = `${activeRoom.numParticipants} active`;
+        if (diagCanPlay) {
+          diagCanPlay.textContent = activeRoom.canPlaybackAudio ? 'YES (Unlocked) 🔊' : 'PAUSED (Tap required)';
+          diagCanPlay.className = activeRoom.canPlaybackAudio ? 'text-emerald-400 font-bold' : 'text-amber-400';
         }
+      } else {
+        if (diagLivekitState) {
+          diagLivekitState.textContent = 'Disconnected';
+          diagLivekitState.className = 'text-zinc-500';
+        }
+        if (diagRoomName) diagRoomName.textContent = '--';
+        if (diagParticipants) diagParticipants.textContent = '0';
+        if (diagCanPlay) diagCanPlay.textContent = '--';
       }
 
-      // Check remote audio element
       const remoteAudio = document.getElementById('remoteAudio');
-      if (diagTrack) {
-        if (remoteAudio && remoteAudio.srcObject) {
-          const tracks = remoteAudio.srcObject.getAudioTracks();
-          if (tracks.length > 0) {
-            const t = tracks[0];
-            diagTrack.textContent = `${tracks.length} track (${t.readyState}, muted:${t.muted}, enabled:${t.enabled})`;
-            diagTrack.className = t.muted ? 'text-amber-400' : 'text-emerald-400';
-          } else {
-            diagTrack.textContent = 'Stream present, but 0 audio tracks';
-            diagTrack.className = 'text-red-400';
-          }
-        } else {
-          diagTrack.textContent = 'No stream attached';
-          diagTrack.className = 'text-zinc-500';
-        }
-      }
-
-      if (diagAudioElem && remoteAudio) {
-        diagAudioElem.textContent = `paused:${remoteAudio.paused}, vol:${Math.round(remoteAudio.volume * 100)}%, curTime:${remoteAudio.currentTime.toFixed(1)}s`;
+      if (diagTrackSubscribed) {
+        diagTrackSubscribed.textContent = remoteAudio && remoteAudio.srcObject ? 'YES (Active stream attached) ✅' : 'No track attached';
+        diagTrackSubscribed.className = remoteAudio && remoteAudio.srcObject ? 'text-emerald-400 font-bold' : 'text-zinc-500';
       }
     }
 
     function copyDiagnosticsReport() {
-      const remoteAudio = document.getElementById('remoteAudio');
-      let tracksInfo = 'None';
-      if (remoteAudio && remoteAudio.srcObject) {
-        const tracks = remoteAudio.srcObject.getAudioTracks();
-        tracksInfo = tracks.map(t => `kind:${t.kind}, readyState:${t.readyState}, muted:${t.muted}, enabled:${t.enabled}`).join('; ');
-      }
-
-      let currentCall = incomingCall || (activeCalls.size > 0 ? activeCalls.values().next().value : null);
-      const iceState = currentCall && currentCall.peerConnection ? currentCall.peerConnection.iceConnectionState : 'None';
-      const connState = currentCall && currentCall.peerConnection ? currentCall.peerConnection.connectionState : 'None';
-
       const report = `
-=== JamRoom Diagnostics Report ===
+=== JamRoom LiveKit Diagnostics ===
 Timestamp: ${new Date().toISOString()}
 User Agent: ${navigator.userAgent}
-Secure Context: ${window.isSecureContext} (${window.location.protocol})
-Current URL: ${window.location.href}
 Mode: ${currentMode}
-Peer ID: ${peer?.id || 'none'}
-Target Room: ${currentRoomCode || 'none'}
-Data Channel Open: ${hostDataConn ? hostDataConn.open : 'N/A'}
-WebRTC ICE State: ${iceState}
-WebRTC Conn State: ${connState}
-Audio Element Paused: ${remoteAudio?.paused}
-Audio Element CurrentTime: ${remoteAudio?.currentTime}s
-Audio Element Volume: ${remoteAudio?.volume}
-Audio Tracks: ${tracksInfo}
+Room Code: ${currentRoomCode || 'none'}
+LiveKit Room State: ${activeRoom ? activeRoom.state : 'disconnected'}
+Participants: ${activeRoom ? activeRoom.numParticipants : 0}
+Can Playback Audio: ${activeRoom ? activeRoom.canPlaybackAudio : 'N/A'}
 
 --- Recent Logs ---
 ${logsHistory.join('\n')}
-==================================
+===================================
 `;
       navigator.clipboard.writeText(report.trim()).then(() => {
-        showToast("Diagnostic report copied to clipboard!");
+        showToast("Diagnostic report copied!");
       }).catch(() => {
-        showToast("Could not copy directly. Select logs text.");
+        showToast("Select logs to copy.");
       });
     }
 
-    // Toast helper
     let toastTimeout;
     function showToast(msg, duration = 3000) {
       const toast = document.getElementById('toast');
@@ -684,57 +587,8 @@ ${logsHistory.join('\n')}
       }, duration);
     }
 
-    // ==========================================
-    // AUDIO ENGINE UNLOCKER FOR MOBILE (iOS / Android)
-    // ==========================================
-    function unlockMobileAudio() {
-      if (isAudioUnlocked) return;
-
-      const remoteAudio = document.getElementById('remoteAudio');
-      if (remoteAudio) {
-        remoteAudio.muted = false;
-        const silentWav = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
-        if (!remoteAudio.srcObject) {
-          remoteAudio.src = silentWav;
-          remoteAudio.play().then(() => {
-            logDebug('[Audio] Mobile audio session pre-unlocked successfully', 'success');
-            remoteAudio.pause();
-            remoteAudio.removeAttribute('src');
-            isAudioUnlocked = true;
-          }).catch(err => {
-            logDebug(`[Audio] Unlock silent play attempted: ${err.message}`, 'warn');
-          });
-        }
-      }
-
-      if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume().then(() => logDebug('[Audio] AudioContext resumed'));
-      }
-    }
-
-    // Pre-unlock on first user interaction anywhere on the screen
-    window.addEventListener('touchstart', unlockMobileAudio, { passive: true, once: true });
-    window.addEventListener('click', unlockMobileAudio, { passive: true, once: true });
-
-    // Audio Element Event Listeners
-    const remoteAudioEl = document.getElementById('remoteAudio');
-    if (remoteAudioEl) {
-      remoteAudioEl.addEventListener('play', () => logDebug('[AudioElement] play event fired'));
-      remoteAudioEl.addEventListener('playing', () => logDebug('[AudioElement] playing event (sound rendering to hardware) 🔊', 'success'));
-      remoteAudioEl.addEventListener('pause', () => logDebug('[AudioElement] pause event', 'warn'));
-      remoteAudioEl.addEventListener('waiting', () => logDebug('[AudioElement] waiting for audio packets...'));
-      remoteAudioEl.addEventListener('error', (e) => logDebug(`[AudioElement] error: ${remoteAudioEl.error?.message || remoteAudioEl.error?.code}`, 'error'));
-    }
-
-    // Check secure context on boot
-    if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      document.getElementById('insecureBanner').classList.remove('hidden');
-      logDebug('Insecure context detected! WebRTC is restricted on non-HTTPS origins.', 'error');
-    }
-
     // Tab & View Switcher
     function switchMode(mode) {
-      unlockMobileAudio();
       cleanupCurrentMode();
 
       currentMode = mode;
@@ -767,31 +621,18 @@ ${logsHistory.join('\n')}
       updateDiagnosticsView();
     }
 
-    function cleanupCurrentMode() {
-      if (hostLocalStream) {
-        hostLocalStream.getTracks().forEach(t => t.stop());
-        hostLocalStream = null;
+    async function cleanupCurrentMode() {
+      stopHostVisualizer();
+
+      if (publishedAudioTrack) {
+        publishedAudioTrack.stop();
+        publishedAudioTrack = null;
       }
 
-      activeCalls.forEach(call => {
-        try { call.close(); } catch(e){}
-      });
-      activeCalls.clear();
-      connectedListeners.clear();
-
-      if (incomingCall) {
-        try { incomingCall.close(); } catch(e){}
-        incomingCall = null;
-      }
-
-      if (hostDataConn) {
-        try { hostDataConn.close(); } catch(e){}
-        hostDataConn = null;
-      }
-
-      if (peer) {
-        try { peer.destroy(); } catch(e){}
-        peer = null;
+      if (activeRoom) {
+        logDebug('[LiveKit] Disconnecting room session...');
+        await activeRoom.disconnect();
+        activeRoom = null;
       }
 
       const remoteAudio = document.getElementById('remoteAudio');
@@ -803,151 +644,48 @@ ${logsHistory.join('\n')}
     }
 
     // ==========================================
+    // TOKEN SERVICE CLIENT
+    // ==========================================
+    async function fetchLiveKitToken(roomCode, isHost = false) {
+      logDebug(`[Token] Fetching LiveKit token for room ${roomCode} (isHost: ${isHost})...`);
+      try {
+        const res = await fetch(`/api/token?room=${encodeURIComponent(roomCode)}&isHost=${isHost}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (data.missing) {
+            document.getElementById('missingEnvBanner').classList.remove('hidden');
+            logDebug(`[Token Error] Missing LiveKit credentials in Vercel: ${JSON.stringify(data.missing)}`, 'error');
+            throw new Error('LiveKit credentials not configured in Vercel environment variables.');
+          }
+          throw new Error(data.error || 'Failed to fetch room token');
+        }
+
+        document.getElementById('missingEnvBanner').classList.add('hidden');
+        document.getElementById('diagServerUrl').textContent = data.livekitUrl || 'cloud.livekit.io';
+        logDebug(`[Token] Received LiveKit token for identity: ${data.identity}`, 'success');
+        return data;
+      } catch (err) {
+        logDebug(`[Token Error] ${err.message}`, 'error');
+        throw err;
+      }
+    }
+
+    // ==========================================
     // HOST IMPLEMENTATION
     // ==========================================
-
     function initHostMode() {
       const codeDisplay = document.getElementById('hostRoomCodeDisplay');
       const statusText = document.getElementById('hostStatusText');
       const statusDot = document.getElementById('hostStatusDot');
-      const btnBroadcast = document.getElementById('btnHostBroadcast');
-
-      statusText.textContent = "Connecting to signaling server...";
-      statusDot.className = "w-3 h-3 rounded-full bg-amber-500 animate-pulse";
-      btnBroadcast.disabled = true;
 
       const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
       currentRoomCode = roomCode;
       codeDisplay.textContent = roomCode;
 
-      const peerId = `${ROOM_PREFIX}${roomCode}`;
-      logDebug(`[Host] Initializing Peer with ID: ${peerId}`);
-      peer = new Peer(peerId, PEER_CONFIG);
-
-      peer.on('open', (id) => {
-        logDebug(`[Host] Room ready with Peer ID: ${id}`, 'success');
-        statusText.textContent = "Room Ready (Click 'Start Audio Broadcast')";
-        statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
-        btnBroadcast.disabled = false;
-        showToast(`Host Room ${roomCode} created!`);
-        updateDiagnosticsView();
-      });
-
-      peer.on('connection', (conn) => {
-        logDebug(`[Host] Incoming data channel from: ${conn.peer}`);
-        
-        conn.on('open', () => {
-          connectedListeners.add(conn.peer);
-          updateHostListenerCount();
-          logDebug(`[Host] Listener registered: ${conn.peer}. Total listeners: ${connectedListeners.size}`);
-
-          conn.send({
-            type: 'ROOM_STATUS',
-            broadcasting: !!hostLocalStream
-          });
-
-          if (hostLocalStream) {
-            dispatchCallToListener(conn.peer);
-          }
-        });
-
-        conn.on('data', (data) => {
-          logDebug(`[Host] Data received from listener: ${JSON.stringify(data)}`);
-          if (data && data.type === 'REQUEST_STREAM') {
-            if (hostLocalStream) {
-              logDebug(`[Host] Re-dispatching call to ${conn.peer}`);
-              dispatchCallToListener(conn.peer);
-            }
-          }
-        });
-
-        conn.on('close', () => {
-          logDebug(`[Host] Listener disconnected: ${conn.peer}`);
-          connectedListeners.delete(conn.peer);
-          activeCalls.delete(conn.peer);
-          updateHostListenerCount();
-        });
-
-        conn.on('error', (err) => {
-          logDebug(`[Host] Listener conn error: ${err.message}`, 'warn');
-          connectedListeners.delete(conn.peer);
-          activeCalls.delete(conn.peer);
-          updateHostListenerCount();
-        });
-      });
-
-      peer.on('call', (call) => {
-        logDebug(`[Host] Incoming media call from: ${call.peer}`);
-        if (hostLocalStream) {
-          call.answer(hostLocalStream);
-          activeCalls.set(call.peer, call);
-        } else {
-          call.answer();
-        }
-      });
-
-      peer.on('error', (err) => {
-        logDebug(`[Host] PeerJS Error: ${err.type} - ${err.message}`, 'error');
-        if (err.type === 'unavailable-id') {
-          showToast('Room code collision, generating new room...');
-          initHostMode();
-        } else {
-          statusText.textContent = `Signaling error: ${err.type}`;
-          statusDot.className = "w-3 h-3 rounded-full bg-red-500";
-        }
-      });
-    }
-
-    const callDispatchTimestamps = new Map();
-
-    function dispatchCallToListener(listenerId) {
-      if (!peer || !hostLocalStream) return;
-
-      const now = Date.now();
-      const lastCall = callDispatchTimestamps.get(listenerId) || 0;
-      if (now - lastCall < 2000) {
-        logDebug(`[Host] Skipped duplicate call to ${listenerId} (debounced ${now - lastCall}ms)`);
-        return;
-      }
-      callDispatchTimestamps.set(listenerId, now);
-
-      if (activeCalls.has(listenerId)) {
-        logDebug(`[Host] Closing previous call with ${listenerId} before making fresh call`);
-        try {
-          activeCalls.get(listenerId).close();
-        } catch (e) {}
-        activeCalls.delete(listenerId);
-      }
-
-      try {
-        logDebug(`[Host] Calling listener: ${listenerId}`);
-        const call = peer.call(listenerId, hostLocalStream);
-        activeCalls.set(listenerId, call);
-
-        if (call.peerConnection) {
-          call.peerConnection.addEventListener('iceconnectionstatechange', () => {
-            logDebug(`[Host ICE] to ${listenerId}: ${call.peerConnection.iceConnectionState}`);
-            updateDiagnosticsView();
-          });
-        }
-
-        call.on('close', () => {
-          logDebug(`[Host] Call with ${listenerId} closed`);
-          activeCalls.delete(listenerId);
-        });
-        call.on('error', (err) => {
-          logDebug(`[Host] Call error with ${listenerId}: ${err.message}`, 'error');
-          activeCalls.delete(listenerId);
-        });
-      } catch (err) {
-        logDebug(`[Host] Failed to dispatch call: ${err.message}`, 'error');
-      }
-    }
-
-    function updateHostListenerCount() {
-      const countEl = document.getElementById('hostListenerCount');
-      const count = connectedListeners.size;
-      countEl.textContent = `${count} ${count === 1 ? 'listener' : 'listeners'} connected`;
+      statusText.textContent = "Room Ready (Click 'Start Audio Broadcast')";
+      statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
+      showToast(`Host Room ${roomCode} created!`);
     }
 
     async function toggleBroadcast() {
@@ -956,100 +694,106 @@ ${logsHistory.join('\n')}
       const statusText = document.getElementById('hostStatusText');
       const statusDot = document.getElementById('hostStatusDot');
 
-      if (hostLocalStream) {
-        stopHostBroadcast();
+      if (activeRoom && activeRoom.state === 'connected') {
+        await cleanupCurrentMode();
+        statusText.textContent = "Broadcast stopped (Room ready)";
+        statusDot.className = "w-3 h-3 rounded-full bg-spotify-green";
+        btn.className = "w-full py-4 px-6 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg bg-spotify-green hover:bg-spotify-greenHover text-black cursor-pointer";
+        btnText.textContent = "Start Audio Broadcast";
+        showToast("Broadcast ended");
         return;
       }
 
       try {
-        statusText.textContent = "Requesting tab / system audio...";
-        logDebug('[Host] Requesting getDisplayMedia with audio capture...');
+        statusText.textContent = "Connecting to LiveKit SFU...";
+        statusDot.className = "w-3 h-3 rounded-full bg-amber-500 animate-pulse";
 
+        // 1. Fetch Token from serverless endpoint
+        const { token, livekitUrl } = await fetchLiveKitToken(currentRoomCode, true);
+
+        // 2. Request Tab Audio Stream
+        statusText.textContent = "Select Spotify / Chrome tab to share audio...";
         const displayStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
           audio: {
+            autoGainControl: false,
             echoCancellation: false,
             noiseSuppression: false,
-            autoGainControl: false,
             channelCount: 2
           }
         });
 
         const audioTracks = displayStream.getAudioTracks();
-        logDebug(`[Host] Captured display media tracks: audio=${audioTracks.length}, video=${displayStream.getVideoTracks().length}`);
-
-        if (!audioTracks || audioTracks.length === 0) {
+        if (!audioTracks.length) {
           displayStream.getTracks().forEach(t => t.stop());
           statusText.textContent = "Room Ready (Click 'Start Audio Broadcast')";
-          logDebug('[Host] No audio track was selected in screen share dialog!', 'error');
-          alert("⚠️ No audio track found!\n\nPlease make sure to check the 'Share audio' or 'Also share tab audio' checkbox in the screen share popup.\n\nNote for Mac users: Select a Chrome Tab playing Spotify, not the desktop app window.");
+          statusDot.className = "w-3 h-3 rounded-full bg-spotify-green";
+          alert("⚠️ No audio track found!\n\nPlease select the Chrome Tab playing Spotify and check 'Also share tab audio'.");
           return;
         }
 
         const audioTrack = audioTracks[0];
 
-        // Discard video track immediately to preserve bandwidth
-        displayStream.getVideoTracks().forEach(t => {
-          logDebug('[Host] Discarding video track to save bandwidth');
-          t.stop();
+        // Immediately discard video to save bandwidth
+        displayStream.getVideoTracks().forEach(t => t.stop());
+
+        // 3. Connect to LiveKit Room
+        statusText.textContent = "Connecting to cloud relay...";
+        activeRoom = new LivekitClient.Room({
+          adaptiveStream: true,
+          dynacast: true
         });
 
-        // Create audio-only MediaStream
-        hostLocalStream = new MediaStream([audioTrack]);
+        activeRoom.on(LivekitClient.RoomEvent.ParticipantConnected, () => updateHostListenerCount());
+        activeRoom.on(LivekitClient.RoomEvent.ParticipantDisconnected, () => updateHostListenerCount());
+
+        await activeRoom.connect(livekitUrl, token);
+        logDebug(`[Host] Connected to LiveKit room: ${activeRoom.name}`, 'success');
+
+        // 4. Publish music-grade audio track
+        publishedAudioTrack = new LivekitClient.LocalAudioTrack(audioTrack);
+        
+        await activeRoom.localParticipant.publishTrack(publishedAudioTrack, {
+          name: 'spotify-audio',
+          source: LivekitClient.Track.Source.ScreenShareAudio,
+          dtx: false, // Don't cut off quiet music
+          red: true   // RFC 2198 audio redundancy against cellular packet loss
+        });
+
+        logDebug('[Host] Audio track published to LiveKit SFU! 🔊', 'success');
 
         audioTrack.onended = () => {
-          logDebug('[Host] Audio track stopped by user action');
-          stopHostBroadcast();
+          logDebug('[Host] Audio track stopped by user');
+          toggleBroadcast();
         };
 
-        logDebug(`[Host] Disagreeing calls to ${connectedListeners.size} connected listeners`);
-        connectedListeners.forEach(listenerId => {
-          dispatchCallToListener(listenerId);
-        });
+        // Start Host visualizer
+        startHostVisualizer(new MediaStream([audioTrack]));
 
-        startHostVisualizer(hostLocalStream);
-
-        statusText.textContent = "🔴 LIVE - Broadcasting audio";
+        statusText.textContent = "🔴 LIVE • Broadcasting Audio to SFU";
         statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
         btn.className = "w-full py-4 px-6 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg bg-red-600 hover:bg-red-500 text-white cursor-pointer";
         btnText.textContent = "Stop Audio Broadcast";
-        showToast("Audio broadcast live!");
+        showToast("Broadcasting live via LiveKit!");
+        updateHostListenerCount();
         updateDiagnosticsView();
 
       } catch (err) {
-        logDebug(`[Host] getDisplayMedia error: ${err.message}`, 'error');
-        statusText.textContent = "Broadcast cancelled / permission denied";
-        statusDot.className = "w-3 h-3 rounded-full bg-amber-500";
+        logDebug(`[Host Error] ${err.message}`, 'error');
+        statusText.textContent = `Error: ${err.message}`;
+        statusDot.className = "w-3 h-3 rounded-full bg-red-500";
         if (err.name !== 'NotAllowedError') {
-          showToast(`Capture error: ${err.message}`);
+          showToast(`Broadcast error: ${err.message}`);
         }
       }
     }
 
-    function stopHostBroadcast() {
-      const btn = document.getElementById('btnHostBroadcast');
-      const btnText = document.getElementById('btnHostBroadcastText');
-      const statusText = document.getElementById('hostStatusText');
-      const statusDot = document.getElementById('hostStatusDot');
-
-      if (hostLocalStream) {
-        hostLocalStream.getTracks().forEach(t => t.stop());
-        hostLocalStream = null;
+    function updateHostListenerCount() {
+      const countEl = document.getElementById('hostListenerCount');
+      if (activeRoom && countEl) {
+        const count = Math.max(0, activeRoom.numParticipants - 1);
+        countEl.textContent = `${count} ${count === 1 ? 'listener' : 'listeners'} in room`;
       }
-
-      activeCalls.forEach(call => {
-        try { call.close(); } catch(e){}
-      });
-      activeCalls.clear();
-
-      stopHostVisualizer();
-
-      statusText.textContent = "Broadcast stopped (Room still active)";
-      statusDot.className = "w-3 h-3 rounded-full bg-spotify-green";
-      btn.className = "w-full py-4 px-6 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg bg-spotify-green hover:bg-spotify-greenHover text-black cursor-pointer";
-      btnText.textContent = "Start Audio Broadcast";
-      showToast("Broadcast ended");
-      updateDiagnosticsView();
     }
 
     function copyRoomCode() {
@@ -1074,7 +818,6 @@ ${logsHistory.join('\n')}
     // ==========================================
     // LISTENER IMPLEMENTATION
     // ==========================================
-
     function initListenerMode() {
       const joinForm = document.getElementById('listenerJoinForm');
       const livePanel = document.getElementById('listenerLivePanel');
@@ -1102,9 +845,7 @@ ${logsHistory.join('\n')}
       }
     }
 
-    function joinRoom() {
-      unlockMobileAudio();
-
+    async function joinRoom() {
       const inputCode = document.getElementById('inputRoomCode');
       const roomCode = inputCode.value.trim();
       const statusText = document.getElementById('listenerStatusText');
@@ -1121,200 +862,105 @@ ${logsHistory.join('\n')}
 
       currentRoomCode = roomCode;
       btnJoin.disabled = true;
-      statusText.textContent = "Connecting to host...";
+      statusText.textContent = "Connecting to LiveKit SFU...";
       statusDot.className = "w-3 h-3 rounded-full bg-amber-500 animate-pulse";
 
-      logDebug(`[Listener] Initializing anonymous Peer instance...`);
-      peer = new Peer(PEER_CONFIG);
+      try {
+        // 1. Fetch Listener Token
+        const { token, livekitUrl } = await fetchLiveKitToken(roomCode, false);
 
-      peer.on('open', (myPeerId) => {
-        logDebug(`[Listener] Peer open ID: ${myPeerId}`, 'success');
-        const hostPeerId = `${ROOM_PREFIX}${roomCode}`;
+        // 2. Initialize LiveKit Room
+        activeRoom = new LivekitClient.Room();
 
-        logDebug(`[Listener] Connecting reliable data channel to: ${hostPeerId}`);
-        hostDataConn = peer.connect(hostPeerId, { reliable: true });
+        // Handle Audio Subscriptions
+        activeRoom.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+          logDebug(`[Listener] Subscribed to ${track.kind} track from ${participant.identity}`, 'success');
 
-        hostDataConn.on('open', () => {
-          logDebug(`[Listener] Data channel established with host!`, 'success');
-          statusText.textContent = "Connected • Waiting for audio broadcast...";
-          statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
-          joinForm.classList.add('hidden');
-          livePanel.classList.remove('hidden');
-          showToast("Connected to host room!");
-          
-          // Fallback: Only send REQUEST_STREAM if no incoming call arrives after 3.5s
-          setTimeout(() => {
-            if (!incomingCall && hostDataConn && hostDataConn.open) {
-              logDebug('[Listener] No call received after 3.5s, requesting stream from host...');
-              hostDataConn.send({ type: 'REQUEST_STREAM' });
-            }
-          }, 3500);
-          updateDiagnosticsView();
-        });
+          if (track.kind === LivekitClient.Track.Kind.Audio) {
+            const remoteAudio = document.getElementById('remoteAudio');
+            track.attach(remoteAudio);
+            remoteAudio.volume = parseFloat(document.getElementById('volumeSlider')?.value || 1.0);
 
-        hostDataConn.on('data', (data) => {
-          logDebug(`[Listener] Host message: ${JSON.stringify(data)}`);
-          if (data && data.type === 'ROOM_STATUS') {
-            if (data.broadcasting) {
-              statusText.textContent = "Host is broadcasting • Receiving stream...";
-            }
-          }
-          updateDiagnosticsView();
-        });
-
-        hostDataConn.on('close', () => {
-          logDebug(`[Listener] Host closed connection`, 'warn');
-          statusText.textContent = "Host disconnected";
-          statusDot.className = "w-3 h-3 rounded-full bg-red-500";
-          showToast("Host ended room session");
-          updateDiagnosticsView();
-        });
-
-        hostDataConn.on('error', (err) => {
-          logDebug(`[Listener] Data channel error: ${err.message}`, 'error');
-          statusText.textContent = "Connection to host failed";
-          statusDot.className = "w-3 h-3 rounded-full bg-red-500";
-          updateDiagnosticsView();
-        });
-      });
-
-      // Listen for incoming media call from Host
-      peer.on('call', (call) => {
-        logDebug(`[Listener] Received incoming WebRTC call from: ${call.peer}`, 'success');
-
-        if (incomingCall) {
-          logDebug('[Listener] Closing prior incoming call to negotiate new call');
-          try { incomingCall.close(); } catch(e){}
-          incomingCall = null;
-        }
-        incomingCall = call;
-
-        if (call.peerConnection) {
-          call.peerConnection.addEventListener('iceconnectionstatechange', () => {
-            const state = call.peerConnection.iceConnectionState;
-            logDebug(`[Listener ICE] ${state}`, state === 'connected' ? 'success' : 'info');
-            updateDiagnosticsView();
-          });
-          call.peerConnection.addEventListener('connectionstatechange', () => {
-            const state = call.peerConnection.connectionState;
-            logDebug(`[Listener WebRTC] ${state}`, state === 'connected' ? 'success' : 'info');
-            updateDiagnosticsView();
-          });
-        }
-
-        // Answer call with NO outbound stream
-        call.answer();
-
-        call.on('stream', (remoteStream) => {
-          const audioTracks = remoteStream.getAudioTracks();
-          logDebug(`[Listener] Received stream with ${audioTracks.length} audio tracks`, 'success');
-          
-          if (audioTracks.length === 0) {
-            logDebug('[Listener] ⚠️ Stream has 0 audio tracks! Host did not share audio.', 'error');
-            return;
-          }
-
-          audioTracks.forEach((track, i) => {
-            track.enabled = true;
-            logDebug(`[Listener Track #${i}] kind:${track.kind}, state:${track.readyState}, muted:${track.muted}`);
-
-            track.onmute = () => logDebug(`[Listener Track #${i}] muted (waiting for RTP packets)...`, 'warn');
-            track.onunmute = () => {
-              logDebug(`[Listener Track #${i}] unmuted (RTP audio packets flowing!) 🔊`, 'success');
-              const a = document.getElementById('remoteAudio');
-              if (a) a.play().catch(e => logDebug(`Play on unmute: ${e.message}`));
-              document.getElementById('autoplayBanner').classList.add('hidden');
-              document.getElementById('listenerLiveLabel').textContent = "Live Audio Playing 🔊";
-              statusText.textContent = "🔴 LIVE • Streaming Audio 🔊";
-              statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
-              updateDiagnosticsView();
-            };
-          });
-
-          const remoteAudio = document.getElementById('remoteAudio');
-          if (remoteAudio.srcObject !== remoteStream) {
-            remoteAudio.srcObject = remoteStream;
-          }
-          remoteAudio.muted = false;
-          remoteAudio.volume = parseFloat(document.getElementById('volumeSlider')?.value || 1.0);
-
-          const playPromise = remoteAudio.play();
-          if (playPromise !== undefined) {
-            playPromise.then(() => {
-              logDebug('[Listener] Audio playback started successfully! 🔊', 'success');
-              document.getElementById('autoplayBanner').classList.add('hidden');
-              statusText.textContent = "🔴 LIVE • Streaming Audio 🔊";
-              statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
-              document.getElementById('listenerLiveLabel').textContent = "Live Audio Playing 🔊";
-            }).catch(err => {
-              logDebug(`[Listener] Autoplay restriction: ${err.message}`, 'warn');
+            if (!activeRoom.canPlaybackAudio) {
+              logDebug('[Listener] Audio playback blocked by browser - showing unlock button', 'warn');
               document.getElementById('autoplayBanner').classList.remove('hidden');
               statusText.textContent = "Audio ready • Tap button to unmute";
               statusDot.className = "w-3 h-3 rounded-full bg-amber-500";
-            });
+            } else {
+              document.getElementById('autoplayBanner').classList.add('hidden');
+              statusText.textContent = "🔴 LIVE • Streaming Audio 🔊";
+              statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
+              document.getElementById('listenerLiveLabel').textContent = "Live Audio Playing 🔊";
+            }
           }
           updateDiagnosticsView();
         });
 
-        call.on('close', () => {
-          logDebug('[Listener] Media call closed by host', 'warn');
-          statusText.textContent = "Audio stream stopped by host";
+        // Listen for Audio playback status changes (mobile unlock)
+        activeRoom.on(LivekitClient.RoomEvent.AudioPlaybackStatusChanged, () => {
+          logDebug(`[Listener] canPlaybackAudio: ${activeRoom.canPlaybackAudio}`);
+          if (activeRoom.canPlaybackAudio) {
+            document.getElementById('autoplayBanner').classList.add('hidden');
+            statusText.textContent = "🔴 LIVE • Streaming Audio 🔊";
+            statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
+            document.getElementById('listenerLiveLabel').textContent = "Live Audio Playing 🔊";
+          } else {
+            document.getElementById('autoplayBanner').classList.remove('hidden');
+          }
+          updateDiagnosticsView();
+        });
+
+        activeRoom.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track) => {
+          logDebug('[Listener] Track unsubscribed');
+          track.detach();
+          statusText.textContent = "Audio stream paused by host";
           statusDot.className = "w-3 h-3 rounded-full bg-amber-500";
           document.getElementById('listenerLiveLabel').textContent = "Stream paused by host";
           updateDiagnosticsView();
         });
 
-        call.on('error', (err) => {
-          logDebug(`[Listener] Media call error: ${err.message}`, 'error');
+        activeRoom.on(LivekitClient.RoomEvent.Disconnected, () => {
+          logDebug('[Listener] Disconnected from room', 'warn');
+          statusText.textContent = "Disconnected from room";
+          statusDot.className = "w-3 h-3 rounded-full bg-red-500";
+          showToast("Left room");
           updateDiagnosticsView();
         });
-      });
 
-      peer.on('error', (err) => {
-        logDebug(`[Listener] Peer error: ${err.type} - ${err.message}`, 'error');
-        btnJoin.disabled = false;
-        if (err.type === 'peer-unavailable') {
-          statusText.textContent = "Room not found (Host may be offline)";
-          statusDot.className = "w-3 h-3 rounded-full bg-red-500";
-          showToast("Room not found. Check code or verify host is live.");
-        } else {
-          statusText.textContent = `Connection error: ${err.type}`;
-          statusDot.className = "w-3 h-3 rounded-full bg-red-500";
-        }
+        // 3. Connect to room
+        await activeRoom.connect(livekitUrl, token);
+        logDebug(`[Listener] Connected to LiveKit room: ${activeRoom.name}`, 'success');
+
+        joinForm.classList.add('hidden');
+        livePanel.classList.remove('hidden');
+        statusText.textContent = "Connected to room • Waiting for broadcast...";
+        statusDot.className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
+        showToast("Connected to room!");
         updateDiagnosticsView();
-      });
+
+      } catch (err) {
+        logDebug(`[Listener Error] ${err.message}`, 'error');
+        btnJoin.disabled = false;
+        statusText.textContent = `Connection error: ${err.message}`;
+        statusDot.className = "w-3 h-3 rounded-full bg-red-500";
+        showToast(`Error: ${err.message}`);
+      }
     }
 
     function enableAudioPlayback() {
-      const remoteAudio = document.getElementById('remoteAudio');
-      if (remoteAudio) {
-        remoteAudio.muted = false;
-        remoteAudio.volume = parseFloat(document.getElementById('volumeSlider')?.value || 1.0);
-        remoteAudio.play().then(() => {
-          logDebug('[Listener] Audio manually unmuted by user tap! 🔊', 'success');
+      if (activeRoom) {
+        activeRoom.startAudio().then(() => {
+          logDebug('[Listener] Audio playback unlocked successfully! 🔊', 'success');
           document.getElementById('autoplayBanner').classList.add('hidden');
           document.getElementById('listenerStatusText').textContent = "🔴 LIVE • Streaming Audio 🔊";
           document.getElementById('listenerStatusDot').className = "w-3 h-3 rounded-full bg-spotify-green pulse-dot";
           document.getElementById('listenerLiveLabel').textContent = "Live Audio Playing 🔊";
           showToast("Audio playback active!");
         }).catch(err => {
-          logDebug(`[Listener] Play error on tap: ${err.message}`, 'error');
-          showToast("Please tap the button again or check phone silent switch");
+          logDebug(`[Listener] startAudio error: ${err.message}`, 'error');
+          showToast("Tap again to activate audio");
         });
       }
-      updateDiagnosticsView();
-    }
-
-    function requestStreamRefresh() {
-      unlockMobileAudio();
-      logDebug('[Listener] Refreshing audio stream...');
-      showToast("Refreshing audio connection...");
-      if (hostDataConn && hostDataConn.open) {
-        hostDataConn.send({ type: 'REQUEST_STREAM' });
-      } else {
-        joinRoom();
-      }
-      updateDiagnosticsView();
     }
 
     function setVolume(val) {
@@ -1323,18 +969,16 @@ ${logsHistory.join('\n')}
         remoteAudio.volume = parseFloat(val);
       }
       document.getElementById('volumePercent').textContent = `${Math.round(val * 100)}%`;
-      updateDiagnosticsView();
     }
 
-    function leaveRoom() {
-      cleanupCurrentMode();
+    async function leaveRoom() {
+      await cleanupCurrentMode();
       initListenerMode();
-      showToast("Left room");
-      updateDiagnosticsView();
+      showToast("Disconnected");
     }
 
     // ==========================================
-    // HOST AUDIO VISUALIZER (Web Audio API)
+    // HOST AUDIO VISUALIZER
     // ==========================================
     let hostAudioCtx = null;
     let hostAnalyser = null;

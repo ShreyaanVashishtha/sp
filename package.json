@@ -1,8 +1,11 @@
 {
   "name": "spotify-audio-broadcast",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "start": "npx serve public"
+  },
+  "dependencies": {
+    "livekit-server-sdk": "^2.6.0"
   }
 }
