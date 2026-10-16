@@ -93,6 +93,22 @@
       100% { transform: scaleY(1); }
     }
 
+    /* Sonar Radar sweep & pulse animation */
+    @keyframes radarSweep {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .radar-sweep {
+      animation: radarSweep 2.2s linear infinite;
+    }
+    @keyframes sonarPulse {
+      0% { transform: scale(0.4); opacity: 0.9; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+    .sonar-ring {
+      animation: sonarPulse 1.8s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+    }
+
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #0c0d10; }
     ::-webkit-scrollbar-thumb { background: #262a33; border-radius: 9999px; }
@@ -193,6 +209,26 @@
             Connect Listener
             <svg class="w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </div>
+        </div>
+      </div>
+
+      <!-- Acoustic Sonar Quick Lab Card -->
+      <div onclick="openStandaloneSonarModal()" class="glass-panel p-5 rounded-2xl hover:border-violet-500/50 hover:bg-zinc-800/40 transition cursor-pointer flex items-center justify-between border border-violet-500/20 group">
+        <div class="flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-violet-950/70 border border-violet-500/40 flex items-center justify-center text-violet-300 group-hover:scale-105 transition shadow-lg shadow-violet-950/50">
+            <span class="text-xl">🦇</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-bold text-white group-hover:text-violet-300 transition">Acoustic Sonar Auto-Calibrator</h4>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-950/80 border border-violet-500/40 text-violet-300">NEW LAB</span>
+            </div>
+            <p class="text-xs text-zinc-400 mt-0.5">Measure your Bluetooth speaker or phone DAC audio latency in milliseconds using a microphone echo chirp.</p>
+          </div>
+        </div>
+        <div class="flex items-center text-xs font-semibold text-violet-400 gap-1 whitespace-nowrap ml-3">
+          Launch Sonar
+          <svg class="w-4 h-4 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </div>
       </div>
     </div>
@@ -301,6 +337,25 @@
               <div class="text-[10px] text-zinc-500 uppercase">Jitter</div>
               <div id="hostJitterDisplay" class="text-base font-bold text-zinc-300">&plusmn;0 ms</div>
             </div>
+          </div>
+        </div>
+
+        <!-- Room Sonar Beacon (Dual-Device Acoustic Calibration) -->
+        <div class="bg-zinc-900/90 rounded-2xl p-4 sm:p-5 border border-violet-500/30 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl">🦇</span>
+              <div>
+                <h4 class="text-xs sm:text-sm font-bold text-white">Room Sonar Beacon</h4>
+                <p class="text-[11px] text-zinc-400">Emit a 45ms acoustic chirp from your speaker to calibrate listeners in the room</p>
+              </div>
+            </div>
+            <button 
+              id="btnHostSonarChirp" 
+              onclick="emitHostSonarBeacon()" 
+              class="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs transition shadow-md flex items-center gap-1.5 active:scale-95 whitespace-nowrap">
+              <span>🔊 Emit Sonar Chirp</span>
+            </button>
           </div>
         </div>
 
@@ -423,27 +478,129 @@
             </div>
           </div>
 
-          <!-- SYNC CALIBRATION NUDGE (Web Audio Delay Offset) -->
-          <div class="bg-zinc-900/80 rounded-xl p-4 border border-zinc-800 space-y-2">
-            <div class="flex items-center justify-between text-xs font-semibold text-zinc-400">
-              <span class="flex items-center gap-1.5 font-sans">
-                <span>🎚️</span> Hardware Bluetooth Speaker Nudge
-              </span>
-              <span id="nudgeDisplay" class="font-mono text-cyan-400 font-bold">0 ms</span>
+          <!-- ACOUSTIC SONAR AUTO-CALIBRATION SUITE (Beta Feature) -->
+          <div class="bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-zinc-950 rounded-2xl p-5 border border-violet-500/30 space-y-4 shadow-xl">
+            <div class="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-violet-950/80 border border-violet-500/40 flex items-center justify-center text-violet-300">
+                  <span class="text-base">🦇</span>
+                </div>
+                <div>
+                  <h4 class="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                    Acoustic Sonar Auto-Calibration
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-violet-950 border border-violet-500/50 text-violet-300">ECHOLOCATION</span>
+                  </h4>
+                  <p class="text-[11px] text-zinc-400">Measure physical speaker or Bluetooth delay using microphone chirp</p>
+                </div>
+              </div>
             </div>
-            <p class="text-[11px] text-zinc-500">
-              If your phone or Bluetooth speaker has intrinsic latency, nudge delay to micro-align with the room.
+
+            <!-- Mode Selector Tabs -->
+            <div class="grid grid-cols-2 gap-2 p-1 bg-black/50 rounded-xl border border-zinc-800 text-xs font-semibold">
+              <button 
+                id="btnSonarModeLocal" 
+                onclick="setSonarTestMode('local')" 
+                class="py-1.5 px-3 rounded-lg bg-violet-600 text-white shadow-sm transition">
+                🔊 Speaker / Bluetooth Loopback
+              </button>
+              <button 
+                id="btnSonarModeHost" 
+                onclick="setSonarTestMode('host')" 
+                class="py-1.5 px-3 rounded-lg text-zinc-400 hover:text-white transition">
+                📡 Host Room Beacon
+              </button>
+            </div>
+
+            <p id="sonarModeDescription" class="text-[11px] text-zinc-400 leading-relaxed">
+              Plays a 45ms acoustic chirp out of your speaker and listens through your mic to measure DAC & Bluetooth packet latency.
             </p>
-            <input 
-              type="range" 
-              id="syncNudgeSlider" 
-              min="0" 
-              max="250" 
-              step="5" 
-              value="0" 
-              oninput="setSyncNudge(this.value)" 
-              class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-            />
+
+            <!-- Sonar Trigger Button -->
+            <button 
+              id="btnRunListenerSonar" 
+              onclick="startListenerSonar()" 
+              class="w-full py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-lg bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white cursor-pointer active:scale-95">
+              <span id="sonarBtnIcon">🎯</span>
+              <span id="sonarBtnText">Run Sonar Calibration Ping</span>
+            </button>
+
+            <!-- Live Sonar Visualizer & Canvas (Hidden by default) -->
+            <div id="listenerSonarVisualizer" class="hidden space-y-3 pt-1">
+              <div class="flex items-center justify-between text-[11px]">
+                <span id="sonarStatusText" class="text-violet-300 font-mono font-semibold flex items-center gap-1.5">
+                  <span class="inline-block w-2 h-2 rounded-full bg-violet-400 animate-ping"></span>
+                  Pinging 2.5kHz - 6.0kHz chirp...
+                </span>
+                <span id="sonarStageBadge" class="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 text-[10px] font-mono">Stage 1/2</span>
+              </div>
+
+              <!-- Canvas Oscilloscope for Correlation Impulse Peak -->
+              <div class="relative w-full rounded-xl overflow-hidden bg-black/90 border border-violet-900/40 p-1">
+                <canvas id="listenerSonarCanvas" width="480" height="120" class="w-full h-28 block"></canvas>
+                <div id="sonarCanvasOverlay" class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] hidden">
+                  <div class="text-center space-y-1">
+                    <div class="inline-block w-8 h-8 rounded-full border-2 border-violet-400 border-t-transparent animate-spin"></div>
+                    <div class="text-[11px] font-mono text-violet-200">Processing acoustic waveform...</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Measurement Result Metrics -->
+              <div id="sonarResultsContainer" class="hidden space-y-3 pt-1">
+                <div class="grid grid-cols-3 gap-2 text-center font-mono text-xs">
+                  <div class="bg-black/60 p-2.5 rounded-xl border border-zinc-800">
+                    <div class="text-[10px] text-zinc-500 uppercase">Total Round-Trip</div>
+                    <div id="sonarRawDelay" class="text-base font-bold text-violet-400">-- ms</div>
+                  </div>
+                  <div class="bg-black/60 p-2.5 rounded-xl border border-zinc-800">
+                    <div class="text-[10px] text-zinc-500 uppercase">Hardware Output Delay</div>
+                    <div id="sonarOutputDelay" class="text-base font-bold text-cyan-400">-- ms</div>
+                  </div>
+                  <div class="bg-black/60 p-2.5 rounded-xl border border-zinc-800">
+                    <div class="text-[10px] text-zinc-500 uppercase">Confidence (SNR)</div>
+                    <div id="sonarConfidence" class="text-base font-bold text-emerald-400">--%</div>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <button 
+                    id="btnApplySonarNudge" 
+                    onclick="applySonarCalibration()" 
+                    class="flex-1 py-2.5 px-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold text-xs transition shadow-md flex items-center justify-center gap-1.5 active:scale-95">
+                    <span>✨ Apply Calibrated Offset to Nudge</span>
+                  </button>
+                  <button 
+                    onclick="startListenerSonar()" 
+                    title="Retry Test" 
+                    class="p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition text-xs font-bold active:scale-95">
+                    🔄
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- MANUAL NUDGE SLIDER (Synced with Sonar) -->
+            <div class="pt-3 border-t border-zinc-800/80 space-y-2">
+              <div class="flex items-center justify-between text-xs font-semibold text-zinc-400">
+                <span class="flex items-center gap-1.5 font-sans">
+                  <span>🎚️</span> Hardware Bluetooth Speaker Nudge
+                </span>
+                <span id="nudgeDisplay" class="font-mono text-cyan-400 font-bold">0 ms</span>
+              </div>
+              <p class="text-[11px] text-zinc-500">
+                Fine-tune delay offset manually (0ms – 350ms) to align audio with other speakers.
+              </p>
+              <input 
+                type="range" 
+                id="syncNudgeSlider" 
+                min="0" 
+                max="350" 
+                step="5" 
+                value="0" 
+                oninput="setSyncNudge(this.value)" 
+                class="w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+              />
+            </div>
           </div>
 
           <!-- Volume Slider -->
@@ -478,7 +635,79 @@
 
   </main>
 
-  <!-- Remote Audio Element -->
+  <!-- Standalone Acoustic Sonar Modal -->
+  <div id="standaloneSonarModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-panel w-full max-w-lg rounded-3xl p-6 sm:p-7 border border-violet-500/40 space-y-5 shadow-2xl relative">
+      <button onclick="closeStandaloneSonarModal()" class="absolute top-5 right-5 p-2 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-violet-950 border border-violet-500/40 flex items-center justify-center text-violet-300">
+          <span class="text-xl">🦇</span>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            Acoustic Sonar Auto-Calibrator
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-violet-950 border border-violet-500/50 text-violet-300">STANDALONE LAB</span>
+          </h3>
+          <p class="text-xs text-zinc-400">Test speaker & Bluetooth hardware latency using echo chirp</p>
+        </div>
+      </div>
+
+      <div class="p-3 rounded-xl bg-violet-950/30 border border-violet-500/20 text-xs text-zinc-300 leading-relaxed">
+        💡 <strong class="text-white">How it works:</strong> Your device emits a fast 45ms audio chirp (2.5kHz – 6kHz) through your speaker. The microphone records the acoustic return and computes the exact physical playout delay using a matched filter.
+      </div>
+
+      <!-- Trigger Button -->
+      <button 
+        id="btnRunStandaloneSonar" 
+        onclick="startStandaloneSonar()" 
+        class="w-full py-3.5 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white cursor-pointer active:scale-95">
+        <span>🎯 Run Acoustic Sonar Ping</span>
+      </button>
+
+      <!-- Modal Canvas & Visualizer -->
+      <div id="standaloneSonarVisualizer" class="hidden space-y-3 pt-1">
+        <div class="flex items-center justify-between text-[11px]">
+          <span id="standaloneSonarStatusText" class="text-violet-300 font-mono font-semibold flex items-center gap-1.5">
+            <span class="inline-block w-2 h-2 rounded-full bg-violet-400 animate-ping"></span>
+            Emitting acoustic chirp...
+          </span>
+          <span id="standaloneSonarStageBadge" class="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 text-[10px] font-mono">Pinging...</span>
+        </div>
+
+        <div class="relative w-full rounded-xl overflow-hidden bg-black/90 border border-violet-900/40 p-1">
+          <canvas id="standaloneSonarCanvas" width="480" height="120" class="w-full h-28 block"></canvas>
+        </div>
+
+        <!-- Metrics -->
+        <div id="standaloneSonarResults" class="hidden space-y-3">
+          <div class="grid grid-cols-3 gap-2 text-center font-mono text-xs">
+            <div class="bg-black/60 p-2.5 rounded-xl border border-zinc-800">
+              <div class="text-[10px] text-zinc-500 uppercase">Total Round-Trip</div>
+              <div id="standaloneRawDelay" class="text-base font-bold text-violet-400">-- ms</div>
+            </div>
+            <div class="bg-black/60 p-2.5 rounded-xl border border-zinc-800">
+              <div class="text-[10px] text-zinc-500 uppercase">Hardware Output Delay</div>
+              <div id="standaloneOutputDelay" class="text-base font-bold text-cyan-400">-- ms</div>
+            </div>
+            <div class="bg-black/60 p-2.5 rounded-xl border border-zinc-800">
+              <div class="text-[10px] text-zinc-500 uppercase">Confidence (SNR)</div>
+              <div id="standaloneConfidence" class="text-base font-bold text-emerald-400">--%</div>
+            </div>
+          </div>
+          <button 
+            onclick="startStandaloneSonar()" 
+            class="w-full py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs transition active:scale-95">
+            🔄 Test Again
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remote Audio Element for WebRTC Stream -->
   <audio id="remoteAudio" autoplay playsinline webkit-playsinline style="position: fixed; left: -9999px; bottom: 0; width: 1px; height: 1px; opacity: 0.001; pointer-events: none;"></audio>
 
   <!-- Global Toast Notification -->
@@ -529,6 +758,11 @@
       if (audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
+      if (!delayNode && audioCtx) {
+        delayNode = audioCtx.createDelay(1.0);
+        delayNode.delayTime.setValueAtTime(0, audioCtx.currentTime);
+        delayNode.connect(audioCtx.destination);
+      }
       return audioCtx;
     }
 
@@ -546,7 +780,11 @@
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.035);
 
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        if (delayNode) {
+          gain.connect(delayNode);
+        } else {
+          gain.connect(ctx.destination);
+        }
 
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.035);
@@ -755,6 +993,11 @@
         if (msg.type === 'METRONOME_STOP' && currentMode === 'listen') {
           document.getElementById('listenerBeatState').textContent = 'Metronome Stopped by Host';
         }
+
+        // 5. Listener receives Host Room Sonar Beacon
+        if (msg.type === 'SONAR_BEACON_PULSE' && currentMode === 'listen') {
+          handleIncomingHostSonarPulse(msg);
+        }
       } catch (e) {
         console.warn('Data packet parse error:', e);
       }
@@ -764,10 +1007,402 @@
     // AUDIO DELAY NUDGE (Web Audio API)
     // ==========================================
     function setSyncNudge(ms) {
-      document.getElementById('nudgeDisplay').textContent = `${ms} ms`;
-      if (delayNode) {
-        delayNode.delayTime.setValueAtTime(parseFloat(ms) / 1000, audioCtx.currentTime);
+      const num = Math.min(350, Math.max(0, Math.round(parseFloat(ms) || 0)));
+      document.getElementById('nudgeDisplay').textContent = `${num} ms`;
+      const slider = document.getElementById('syncNudgeSlider');
+      if (slider && slider.value !== String(num)) slider.value = num;
+
+      const ctx = getAudioContext();
+      if (delayNode && ctx) {
+        delayNode.delayTime.setTargetAtTime(num / 1000, ctx.currentTime, 0.03);
       }
+    }
+
+    // ==========================================
+    // ACOUSTIC SONAR AUTO-CALIBRATION ENGINE
+    // ==========================================
+    let sonarTestMode = 'local'; // 'local' (device loopback) or 'host' (room beacon)
+    let isSonarRunning = false;
+    let lastCalibratedDelay = 0;
+
+    function setSonarTestMode(mode) {
+      sonarTestMode = mode;
+      const btnLocal = document.getElementById('btnSonarModeLocal');
+      const btnHost = document.getElementById('btnSonarModeHost');
+      const desc = document.getElementById('sonarModeDescription');
+      const btnText = document.getElementById('sonarBtnText');
+
+      if (mode === 'local') {
+        btnLocal.className = "py-1.5 px-3 rounded-lg bg-violet-600 text-white shadow-sm transition";
+        btnHost.className = "py-1.5 px-3 rounded-lg text-zinc-400 hover:text-white transition";
+        desc.textContent = "Plays a 45ms acoustic chirp out of your speaker and listens through your mic to measure DAC & Bluetooth packet latency.";
+        btnText.textContent = "Run Sonar Calibration Ping";
+      } else {
+        btnHost.className = "py-1.5 px-3 rounded-lg bg-violet-600 text-white shadow-sm transition";
+        btnLocal.className = "py-1.5 px-3 rounded-lg text-zinc-400 hover:text-white transition";
+        desc.textContent = "Listens with microphone for the Host's Room Sonar Chirp to calibrate acoustic air delay between devices.";
+        btnText.textContent = "Listen for Host Sonar Chirp";
+      }
+    }
+
+    // Generate 45ms Chirp template: 2500Hz -> 6000Hz with Tukey envelope
+    function generateChirpTemplate(sampleRate) {
+      const duration = 0.045; // 45ms
+      const numSamples = Math.floor(sampleRate * duration);
+      const f0 = 2500;
+      const f1 = 6000;
+      const k = (f1 - f0) / duration;
+      const template = new Float32Array(numSamples);
+      const taper = Math.floor(numSamples * 0.15);
+
+      for (let i = 0; i < numSamples; i++) {
+        const t = i / sampleRate;
+        const phi = 2 * Math.PI * (f0 * t + 0.5 * k * t * t);
+        let win = 1.0;
+        if (i < taper) {
+          win = 0.5 * (1 - Math.cos((Math.PI * i) / taper));
+        } else if (i > numSamples - taper) {
+          win = 0.5 * (1 - Math.cos((Math.PI * (numSamples - i)) / taper));
+        }
+        template[i] = win * Math.sin(phi);
+      }
+      return { template, numSamples, duration };
+    }
+
+    function createChirpAudioBuffer(ctx, chirpData) {
+      const buffer = ctx.createBuffer(1, chirpData.numSamples, ctx.sampleRate);
+      buffer.getChannelData(0).set(chirpData.template);
+      return buffer;
+    }
+
+    // Host emits Sonar beacon chirp from host's speakers & broadcasts timestamp
+    function emitHostSonarBeacon() {
+      const ctx = getAudioContext();
+      const chirpData = generateChirpTemplate(ctx.sampleRate);
+      const buffer = createChirpAudioBuffer(ctx, chirpData);
+
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+
+      const emitTime = ctx.currentTime + 0.05;
+      source.start(emitTime);
+
+      broadcastData({
+        type: 'SONAR_BEACON_PULSE',
+        hostTimestamp: Date.now() + 50
+      });
+
+      showToast("🦇 Sonar chirp emitted from host speakers!");
+    }
+
+    // Listener receives host chirp packet
+    function handleIncomingHostSonarPulse(msg) {
+      if (sonarTestMode === 'host' && isSonarRunning) {
+        showToast("📡 Host Sonar Beacon incoming! Recording acoustic wave...");
+      }
+    }
+
+    // Core Sonar Runner
+    async function executeSonarCalibration({ canvasId, statusTextId, stageBadgeId, resultsContainerId, rawDelayId, outputDelayId, confidenceId, mode = 'local' }) {
+      if (isSonarRunning) return;
+      isSonarRunning = true;
+
+      const statusEl = document.getElementById(statusTextId);
+      const stageEl = document.getElementById(stageBadgeId);
+      const resultsEl = document.getElementById(resultsContainerId);
+      const canvas = document.getElementById(canvasId);
+
+      if (resultsEl) resultsEl.classList.add('hidden');
+      if (stageEl) stageEl.textContent = "Mic Access...";
+      if (statusEl) statusEl.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-violet-400 animate-ping"></span> Requesting microphone...`;
+
+      let micStream = null;
+      let micSource = null;
+      let processor = null;
+      let silentGain = null;
+
+      try {
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') await ctx.resume();
+
+        // 1. Request raw microphone stream (NO echoCancellation, or it will filter out our own chirp!)
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+            channelCount: 1
+          }
+        });
+
+        if (statusEl) statusEl.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-violet-400 animate-pulse"></span> Preparing acoustic buffer...`;
+        if (stageEl) stageEl.textContent = "Recording...";
+
+        const sampleRate = ctx.sampleRate;
+        const chirpData = generateChirpTemplate(sampleRate);
+        const chirpBuffer = createChirpAudioBuffer(ctx, chirpData);
+
+        // Record for 1.2 seconds max
+        const maxSamples = Math.floor(sampleRate * 1.2);
+        const recordedBuffer = new Float32Array(maxSamples);
+        let recordedCount = 0;
+        let isRecording = false;
+
+        micSource = ctx.createMediaStreamSource(micStream);
+        processor = ctx.createScriptProcessor(2048, 1, 1);
+
+        processor.onaudioprocess = (e) => {
+          if (!isRecording) return;
+          const input = e.inputBuffer.getChannelData(0);
+          const copyLen = Math.min(input.length, maxSamples - recordedCount);
+          recordedBuffer.set(input.subarray(0, copyLen), recordedCount);
+          recordedCount += copyLen;
+        };
+
+        micSource.connect(processor);
+        silentGain = ctx.createGain();
+        silentGain.gain.setValueAtTime(0, ctx.currentTime);
+        processor.connect(silentGain);
+        silentGain.connect(ctx.destination);
+
+        // Stabilize audio stream
+        await new Promise(r => setTimeout(r, 150));
+
+        isRecording = true;
+        const startContextTime = ctx.currentTime;
+        let scheduledPlaySample = 0;
+
+        if (mode === 'local') {
+          // Play chirp through device speaker 80ms in the future
+          const targetPlayTime = ctx.currentTime + 0.08;
+          const source = ctx.createBufferSource();
+          source.buffer = chirpBuffer;
+          // Connect to hardware output directly without artificial delay
+          source.connect(ctx.destination);
+          source.start(targetPlayTime);
+
+          scheduledPlaySample = Math.round((targetPlayTime - startContextTime) * sampleRate);
+          if (statusEl) statusEl.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> 🦇 Emitting 45ms Sonar Chirp...`;
+          if (stageEl) stageEl.textContent = "Chirp Fired";
+        } else {
+          if (statusEl) statusEl.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> 📡 Listening for Host Sonar in room...`;
+          if (stageEl) stageEl.textContent = "Listening";
+        }
+
+        // Wait 600ms for chirp to emit and arrive
+        await new Promise(r => setTimeout(r, 650));
+
+        isRecording = false;
+
+        // Clean up mic
+        if (processor) processor.disconnect();
+        if (micSource) micSource.disconnect();
+        if (silentGain) silentGain.disconnect();
+        if (micStream) micStream.getTracks().forEach(t => t.stop());
+
+        if (statusEl) statusEl.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-violet-400"></span> Calculating matched filter impulse...`;
+        if (stageEl) stageEl.textContent = "Analyzing";
+
+        // MATCHED FILTER CROSS-CORRELATION
+        const template = chirpData.template;
+        const numT = chirpData.numSamples;
+        const searchStart = Math.max(0, scheduledPlaySample);
+        const searchEnd = Math.min(recordedCount - numT, searchStart + Math.floor(sampleRate * 0.45)); // search up to 450ms
+
+        let templateEnergy = 0;
+        for (let j = 0; j < numT; j++) templateEnergy += template[j] * template[j];
+
+        // 1. Fast Coarse Search (step = 4)
+        let bestDot = -Infinity;
+        let bestIdx = searchStart;
+        for (let i = searchStart; i < searchEnd; i += 4) {
+          let dot = 0;
+          for (let j = 0; j < numT; j += 4) {
+            dot += recordedBuffer[i + j] * template[j];
+          }
+          if (dot > bestDot) {
+            bestDot = dot;
+            bestIdx = i;
+          }
+        }
+
+        // 2. Fine Search (step = 1 around coarse peak)
+        let fineBest = -Infinity;
+        let fineIdx = bestIdx;
+        const fStart = Math.max(searchStart, bestIdx - 8);
+        const fEnd = Math.min(searchEnd, bestIdx + 8);
+        for (let i = fStart; i <= fEnd; i++) {
+          let dot = 0;
+          for (let j = 0; j < numT; j++) {
+            dot += recordedBuffer[i + j] * template[j];
+          }
+          if (dot > fineBest) {
+            fineBest = dot;
+            fineIdx = i;
+          }
+        }
+
+        // 3. Normalized Score / Pearson Correlation
+        let windowEnergy = 0;
+        for (let j = 0; j < numT; j++) {
+          const s = recordedBuffer[fineIdx + j];
+          windowEnergy += s * s;
+        }
+        const denom = Math.sqrt(templateEnergy * windowEnergy) + 1e-9;
+        const normScore = Math.max(0, fineBest / denom);
+        const confidence = Math.min(99, Math.round(normScore * 135));
+
+        const rawDelaySamples = fineIdx - searchStart;
+        const rawDelayMs = Math.round((rawDelaySamples / sampleRate) * 1000);
+        // Estimate output hardware latency: subtract ~20ms input buffer + ~1ms air flight
+        const outputDelayMs = Math.max(0, rawDelayMs - 20);
+        lastCalibratedDelay = outputDelayMs;
+
+        // Draw correlation wave on canvas
+        drawSonarCanvas(canvas, recordedBuffer, searchStart, searchEnd, fineIdx, outputDelayMs, confidence);
+
+        // Update readouts
+        if (rawDelayId) document.getElementById(rawDelayId).textContent = `${rawDelayMs} ms`;
+        if (outputDelayId) document.getElementById(outputDelayId).textContent = `${outputDelayMs} ms`;
+        if (confidenceId) {
+          const confEl = document.getElementById(confidenceId);
+          confEl.textContent = `${confidence}%`;
+          if (confidence > 70) confEl.className = "text-base font-bold text-emerald-400";
+          else if (confidence > 40) confEl.className = "text-base font-bold text-amber-400";
+          else confEl.className = "text-base font-bold text-red-400";
+        }
+
+        if (resultsEl) resultsEl.classList.remove('hidden');
+
+        if (confidence < 35) {
+          if (statusEl) statusEl.innerHTML = `⚠️ <span class="text-amber-400">Low signal. Turn volume up & retry.</span>`;
+          if (stageEl) stageEl.textContent = "Low SNR";
+        } else {
+          if (statusEl) statusEl.innerHTML = `🎯 <span class="text-emerald-400 font-bold">Chirp Detected (+${outputDelayMs}ms delay)</span>`;
+          if (stageEl) stageEl.textContent = "Success";
+        }
+
+      } catch (err) {
+        console.error("Sonar calibration error:", err);
+        if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+        if (stageEl) stageEl.textContent = "Failed";
+        showToast(`Sonar error: ${err.message}`);
+      } finally {
+        if (micStream) micStream.getTracks().forEach(t => t.stop());
+        isSonarRunning = false;
+      }
+    }
+
+    // Render correlation impulse response waveform on HTML5 canvas
+    function drawSonarCanvas(canvas, recordedBuffer, startIdx, endIdx, peakIdx, delayMs, confidence) {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Background
+      ctx.fillStyle = "#090a0d";
+      ctx.fillRect(0, 0, width, height);
+
+      // Grid lines
+      ctx.strokeStyle = "#1b1e24";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.moveTo(0, height / 2);
+      ctx.lineTo(width, height / 2);
+      ctx.stroke();
+
+      // Waveform of recorded buffer around search window
+      const range = endIdx - startIdx;
+      if (range <= 0) return;
+
+      ctx.beginPath();
+      ctx.strokeStyle = confidence > 40 ? "#7928ca" : "#666";
+      ctx.lineWidth = 1.5;
+
+      for (let x = 0; x < width; x++) {
+        const sampleIdx = startIdx + Math.floor((x / width) * range);
+        const val = recordedBuffer[sampleIdx] || 0;
+        const y = (height / 2) - (val * (height * 0.8));
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Draw detection peak line
+      const peakX = Math.round(((peakIdx - startIdx) / range) * width);
+      ctx.strokeStyle = confidence > 40 ? "#00f2fe" : "#ef4444";
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = "#00f2fe";
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.moveTo(peakX, 10);
+      ctx.lineTo(peakX, height - 10);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Marker badge text
+      ctx.fillStyle = "#00f2fe";
+      ctx.font = "bold 11px monospace";
+      ctx.fillText(`🎯 +${delayMs}ms (${confidence}%)`, Math.min(width - 120, Math.max(10, peakX - 40)), 22);
+    }
+
+    // Listener Sonar Handlers
+    function startListenerSonar() {
+      const visualizer = document.getElementById('listenerSonarVisualizer');
+      if (visualizer) visualizer.classList.remove('hidden');
+
+      executeSonarCalibration({
+        canvasId: 'listenerSonarCanvas',
+        statusTextId: 'sonarStatusText',
+        stageBadgeId: 'sonarStageBadge',
+        resultsContainerId: 'sonarResultsContainer',
+        rawDelayId: 'sonarRawDelay',
+        outputDelayId: 'sonarOutputDelay',
+        confidenceId: 'sonarConfidence',
+        mode: sonarTestMode
+      });
+    }
+
+    function applySonarCalibration() {
+      if (lastCalibratedDelay >= 0) {
+        setSyncNudge(lastCalibratedDelay);
+        showToast(`✅ Synced! Nudge slider updated to +${lastCalibratedDelay}ms`);
+      }
+    }
+
+    // Standalone Modal Sonar Handlers
+    function openStandaloneSonarModal() {
+      document.getElementById('standaloneSonarModal').classList.remove('hidden');
+    }
+
+    function closeStandaloneSonarModal() {
+      document.getElementById('standaloneSonarModal').classList.add('hidden');
+    }
+
+    function startStandaloneSonar() {
+      const visualizer = document.getElementById('standaloneSonarVisualizer');
+      if (visualizer) visualizer.classList.remove('hidden');
+
+      executeSonarCalibration({
+        canvasId: 'standaloneSonarCanvas',
+        statusTextId: 'standaloneSonarStatusText',
+        stageBadgeId: 'standaloneSonarStageBadge',
+        resultsContainerId: 'standaloneSonarResults',
+        rawDelayId: 'standaloneRawDelay',
+        outputDelayId: 'standaloneOutputDelay',
+        confidenceId: 'standaloneConfidence',
+        mode: 'local'
+      });
     }
 
     function setVolume(val) {

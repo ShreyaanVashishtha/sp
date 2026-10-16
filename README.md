@@ -35,6 +35,8 @@ Built using an enterprise-grade **Selective Forwarding Unit (SFU)** architecture
 - 🎛️ **High-Fidelity Stereo Audio:** Captures and encodes high-bitrate stereo Opus audio (`echoCancellation: false`, `autoGainControl: false`, `noiseSuppression: false`, `dtx: false`) preventing voice filters from distorting music.
 - 🚀 **Zero Host Upload Bottleneck:** The host uploads **one single stream** to the cloud SFU, which fans out the audio to 10, 50, or 100+ listeners without overloading home internet.
 - 📱 **Mobile Autoplay Mitigation:** Native audio session pre-unlocking and unmissable fallback banners satisfying iOS Safari and Android Chrome media restrictions.
+- 🧪 **Beta Lab (`/beta`):** Includes precision Millisecond Sync Metronome & Strobe, real-time RTT & Clock Offset ($\theta$) benchmarks.
+- 🦇 **Acoustic Sonar Auto-Calibration:** Built-in echolocation engine that plays a 45ms audio chirp (2.5kHz–6kHz) and uses the microphone with a matched filter to automatically calculate and calibrate Bluetooth speaker / hardware latency.
 - 🐞 **Live WebRTC Inspector:** Built-in real-time diagnostic drawer inspecting ICE connection states, packet flow, and browser audio rendering.
 
 ---
@@ -112,6 +114,7 @@ jam-room/
 │   └── token.js       # Vercel Serverless Function to mint LiveKit JWT tokens
 ├── public/
 │   ├── index.html     # Single Page Application (Tailwind + LiveKit Client SDK)
+│   ├── beta.html      # Beta Lab (Millisecond Metronome + Sonar Auto-Calibration)
 │   ├── privacy.html   # Privacy Policy
 │   └── terms.html     # Terms of Service & Legal Disclaimer
 ├── .env.example       # Template for LiveKit credentials
