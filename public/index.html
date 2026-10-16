@@ -115,14 +115,19 @@
         </div>
       </div>
 
-      <!-- Quick Nav Mode Tabs -->
-      <div class="flex items-center bg-zinc-900/90 p-1 rounded-full border border-zinc-800 text-xs font-medium">
-        <button id="tabBtnHost" onclick="switchMode('host')" class="px-3.5 py-1.5 rounded-full transition-all text-zinc-400 hover:text-white">
-          Host
-        </button>
-        <button id="tabBtnListen" onclick="switchMode('listen')" class="px-3.5 py-1.5 rounded-full transition-all text-zinc-400 hover:text-white">
-          Listen
-        </button>
+      <!-- Quick Nav Mode Tabs & Beta Lab Link -->
+      <div class="flex items-center gap-2">
+        <a href="/beta" class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-gradient-to-r from-cyan-950/80 to-zinc-900 border border-cyan-500/40 text-cyan-300 hover:text-white hover:border-cyan-400 transition shadow-sm">
+          <span>🧪</span> Beta Labs
+        </a>
+        <div class="flex items-center bg-zinc-900/90 p-1 rounded-full border border-zinc-800 text-xs font-medium">
+          <button id="tabBtnHost" onclick="switchMode('host')" class="px-3.5 py-1.5 rounded-full transition-all text-zinc-400 hover:text-white">
+            Host
+          </button>
+          <button id="tabBtnListen" onclick="switchMode('listen')" class="px-3.5 py-1.5 rounded-full transition-all text-zinc-400 hover:text-white">
+            Listen
+          </button>
+        </div>
       </div>
     </div>
   </header>
